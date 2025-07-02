@@ -1,0 +1,14 @@
+{
+    "name": "Swapp",
+    "description": "Ya know what it does~",
+    "authors": [
+        {
+            "name": "Sunny",
+            "id": "1232704373176664257"
+        }
+    ],
+    "main": "src/index.ts",
+    "vendetta": {
+        "icon": "ic_feedback"
+    }
+}

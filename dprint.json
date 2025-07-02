@@ -1,0 +1,22 @@
+{
+    "useTabs": false,
+    "indentWidth": 4,
+    "typescript": {
+        "quoteStyle": "alwaysDouble"
+    },
+    "excludes": [
+        "**/node_modules",
+        "**/*-lock.json",
+        "**/.git",
+        "**/dist"
+    ],
+    "includes": [
+        "**/*"
+    ],
+    "plugins": [
+        "https://plugins.dprint.dev/typescript-0.93.2.wasm",
+        "https://plugins.dprint.dev/json-0.19.4.wasm",
+        "https://plugins.dprint.dev/markdown-0.17.8.wasm",
+        "https://plugins.dprint.dev/g-plane/markup_fmt-v0.16.0.wasm"
+    ]
+}
