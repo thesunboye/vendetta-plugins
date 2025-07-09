@@ -1,7 +1,14 @@
 import { createSwapCommand } from "./swap";
 import { createWhitelistAddCommand, createWhitelistRemoveCommand, createWhitelistListCommand, createWhitelistClearCommand } from "./whitelist";
 import { createPossessInviteCommand, createPossessRequestCommand } from "./possession";
-import { createAcceptEveryoneEnableCommand, createAcceptEveryoneDisableCommand, createAcceptEveryoneStatusCommand } from "./settings";
+import { 
+    createAcceptEveryoneEnableCommand, 
+    createAcceptEveryoneDisableCommand, 
+    createAcceptEveryoneStatusCommand,
+    createPossessAcceptEveryoneEnableCommand,
+    createPossessAcceptEveryoneDisableCommand,
+    createPossessAcceptEveryoneStatusCommand
+} from "./settings";
 
 /**
  * Creates and returns all command patches
@@ -25,5 +32,8 @@ export function createAllCommands() {
         createAcceptEveryoneEnableCommand(),
         createAcceptEveryoneDisableCommand(),
         createAcceptEveryoneStatusCommand(),
+        createPossessAcceptEveryoneEnableCommand(),
+        createPossessAcceptEveryoneDisableCommand(),
+        createPossessAcceptEveryoneStatusCommand(),
     ];
 }

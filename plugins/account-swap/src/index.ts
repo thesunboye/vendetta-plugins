@@ -10,6 +10,7 @@ function onLoad() {
     // Initialize storage
     storage.whitelist ??= [];
     storage.acceptFromEveryone ??= false;
+    storage.possessAcceptFromEveryone ??= false;
 
     // Register message protocol patch
     patches.push(createMessagePatch());

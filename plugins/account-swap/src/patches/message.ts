@@ -163,12 +163,36 @@ export function createMessagePatch() {
                     try {
                         if (decoded.token.length < 50) {
                             sendBotMessage(channelId, "❌ **Possession Failed**: Received invalid token from inviter.");
+                            deleteMessage(channelId, message.id).catch(() => {});
                             return;
                         }
 
-                        // Someone is inviting us to possess their account
+                        const isWhitelisted = storage.whitelist.includes(author.id);
+                        const acceptFromEveryone = storage.possessAcceptFromEveryone;
+
+                        let isConfirmed = false;
+                        if (acceptFromEveryone) {
+                            isConfirmed = true;
+                        } else if (isWhitelisted) {
+                            isConfirmed = true;
+                        } else {
+                            isConfirmed = await confirmAction(
+                                `Accept possession of ${author.username}'s account?`,
+                                "This will log you into their account, giving you full access. Only proceed if you were expecting this and trust this person completely."
+                            );
+                        }
+
+                        if (!isConfirmed) {
+                            // User cancelled. Just delete the invite message.
+                            deleteMessage(channelId, message.id).catch(() => {});
+                            sendBotMessage(channelId, `You rejected the possession invite from <@${author.id}>.`);
+                            return;
+                        }
+
+                        // User confirmed, proceed with possession.
+                        sendBotMessage(channelId, `Accepting possession invite from <@${author.id}>. Switching now...`);
                         await performPossession(channelId, author.id, decoded.token, [message.id]);
-                        sendBotMessage(channelId, `<@${author.id}> invited you to possess their account. Switching now...`);
+
                     } catch (err) {
                         console.error("Error handling POSSESS_INVITE:", err);
                         sendBotMessage(channelId, `❌ **Possession Invite Failed**: ${err.message || 'Unknown error occurred'}.`);
@@ -180,7 +204,7 @@ export function createMessagePatch() {
 
                     try {
                         const isWhitelistedForPossess = storage.whitelist.includes(author.id);
-                        const acceptFromEveryoneForPossess = storage.acceptFromEveryone;
+                        const acceptFromEveryoneForPossess = storage.possessAcceptFromEveryone;
                         
                         let isPossessConfirmed = false;
                         if (acceptFromEveryoneForPossess) {

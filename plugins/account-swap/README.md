@@ -2,6 +2,20 @@
 
 This Vendetta plugin allows users to securely swap Discord accounts or share account access through a sophisticated protocol system.
 
+## ⚠️ Safety Considerations
+
+### **For Users**
+- Only use with completely trusted individuals
+- Understand that tokens provide full account access
+- Use whitelist for frequently trusted users
+- Be extremely careful with auto-accept settings
+
+### **For Developers**
+- Always validate tokens before use
+- Implement proper cleanup on all code paths
+- Use clear, descriptive error messages
+- Test timeout and error scenarios thoroughly
+
 ## 📁 Project Structure
 
 ```
@@ -92,28 +106,6 @@ Requester                   Target
   [Switch]                     |
 ```
 
-## 🛡️ Security Features
-
-### **Multi-layer Confirmation System**
-- Double confirmation for dangerous operations
-- Clear warning messages about risks
-- Whitelist system for trusted users
-
-### **Message Security**
-- Automatic message cleanup to hide tokens
-- Encoded message content using 3y3 protocol
-- DM-only operation requirement
-
-### **Error Handling**
-- Comprehensive try-catch blocks
-- User-friendly error messages via bot notifications
-- Graceful degradation on partial failures
-
-### **State Management**
-- Timeout handling (30s for requests)
-- Automatic cleanup on plugin unload
-- Duplicate request prevention
-
 ## 📋 Available Commands
 
 ### **Core Commands**
@@ -133,60 +125,3 @@ Requester                   Target
 - `/swap-accept-everyone-enable` - ⚠️ Auto-accept all requests
 - `/swap-accept-everyone-disable` - Disable auto-accept
 - `/swap-accept-everyone-status` - Check auto-accept status
-
-## 🔧 Development Guidelines
-
-### **Adding New Commands**
-1. Create command function in appropriate file under `commands/`
-2. Add to the export list in `commands/index.ts`
-3. Commands automatically registered on plugin load
-
-### **Extending Protocol**
-1. Add new message types to `swap.ts` 
-2. Handle new message types in `patches/message.ts`
-3. Add corresponding business logic to `core/operations.ts`
-
-### **Error Handling Pattern**
-```typescript
-try {
-    // Operation logic
-} catch (err) {
-    console.error("Error context:", err);
-    sendBotMessage(channelId, `❌ **Operation Failed**: ${err.message || 'Unknown error'}.`);
-    // Cleanup if needed
-}
-```
-
-## ⚠️ Safety Considerations
-
-### **For Users**
-- Only use with completely trusted individuals
-- Understand that tokens provide full account access
-- Use whitelist for frequently trusted users
-- Be extremely careful with auto-accept settings
-
-### **For Developers**
-- Always validate tokens before use
-- Implement proper cleanup on all code paths
-- Use clear, descriptive error messages
-- Test timeout and error scenarios thoroughly
-
-## 🧪 Testing
-
-### **Manual Testing Checklist**
-- [ ] Basic swap between two accounts
-- [ ] Timeout handling (wait 30+ seconds)
-- [ ] Error scenarios (invalid tokens, network issues)
-- [ ] Whitelist functionality
-- [ ] Possession invite/request flows
-- [ ] Message cleanup verification
-- [ ] Plugin load/unload cleanup
-
-### **Error Scenarios to Test**
-- Network failures during message sending
-- Invalid or corrupted tokens
-- Discord API changes/failures
-- Rapid command execution
-- Plugin reload during active operations
-
-This modular structure makes the codebase much more maintainable, testable, and extensible while preserving all the security and functionality features.
