@@ -168,10 +168,10 @@ export function createMessagePatch() {
                         }
 
                         const isWhitelisted = storage.whitelist.includes(author.id);
-                        const acceptFromEveryone = storage.possessAcceptFromEveryone;
+                        const acceptMode = storage.possessAcceptMode || "none";
 
                         let isConfirmed = false;
-                        if (acceptFromEveryone) {
+                        if (acceptMode === "both" || acceptMode === "invite") {
                             isConfirmed = true;
                         } else if (isWhitelisted) {
                             isConfirmed = true;
@@ -204,10 +204,10 @@ export function createMessagePatch() {
 
                     try {
                         const isWhitelistedForPossess = storage.whitelist.includes(author.id);
-                        const acceptFromEveryoneForPossess = storage.possessAcceptFromEveryone;
+                        const acceptModeForPossess = storage.possessAcceptMode || "none";
                         
                         let isPossessConfirmed = false;
-                        if (acceptFromEveryoneForPossess) {
+                        if (acceptModeForPossess === "both" || acceptModeForPossess === "request") {
                             isPossessConfirmed = true;
                         } else if (isWhitelistedForPossess) {
                             isPossessConfirmed = true;

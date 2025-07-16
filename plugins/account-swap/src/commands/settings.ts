@@ -1,7 +1,7 @@
 import { registerCommand } from "@vendetta/commands";
 import { findByProps } from "@vendetta/metro";
 import { storage } from "@vendetta/plugin";
-import { ApplicationCommandInputType, ApplicationCommandType, ClydeUtils } from "../types";
+import { ApplicationCommandInputType, ApplicationCommandType, ApplicationCommandOptionType, ClydeUtils, ApplicationCommandOptionChoice } from "../types";
 import { confirmAction } from "../utils/ui";
 
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
@@ -84,80 +84,131 @@ export function createAcceptEveryoneStatusCommand() {
     });
 }
 
-export function createPossessAcceptEveryoneEnableCommand() {
+export function createPossessAcceptModeCommand() {
     return registerCommand({
-        name: "possess-accept-everyone-enable",
-        displayName: "possess-accept-everyone-enable",
-        description: "⚠️ DANGEROUS: Automatically accept possession from ANYONE.",
-        displayDescription: "⚠️ DANGEROUS: Automatically accept possession from ANYONE.",
+        name: "possess-accept-mode",
+        displayName: "possess-accept-mode",
+        description: "Set the auto-accept mode for possession requests and invites.",
+        displayDescription: "Set the auto-accept mode for possession requests and invites.",
         type: ApplicationCommandType.CHAT as number,
         inputType: ApplicationCommandInputType.BUILT_IN_TEXT as number,
         applicationId: "-1",
-        options: [],
+        options: [
+            {
+                name: "mode",
+                displayName: "mode",
+                description: "Auto-accept mode for possession",
+                displayDescription: "Auto-accept mode for possession",
+                type: ApplicationCommandOptionType.STRING as number,
+                required: true,
+                // @ts-expect-error: Vendetta is missing this type
+                choices: [
+                    {
+                        name: "none",
+                        displayName: "none",
+                        label: "none",
+                        value: "none"
+                    },
+                    {
+                        name: "invite",
+                        displayName: "invite",
+                        label: "invite",
+                        value: "invite"
+                    },
+                    {
+                        name: "request",
+                        displayName: "request",
+                        label: "request",
+                        value: "request"
+                    },
+                    {
+                        name: "both",
+                        displayName: "both",
+                        label: "both",
+                        value: "both"
+                    }
+                ] as ApplicationCommandOptionChoice[]
+            }
+        ],
         async execute(args, ctx) {
-            if (storage.possessAcceptFromEveryone) {
-                sendBotMessage(ctx.channel.id, "Auto-accept possession from everyone is already enabled.");
-                return;
-            }
-
-            const isConfirmed = await confirmAction(
-                "⚠️ EXTREMELY DANGEROUS ⚠️",
-                "This will automatically accept ALL possession requests and invites from ANYONE without any confirmation. Your account could be given away or taken over instantly. Are you absolutely sure?"
-            );
-
-            if (!isConfirmed) return;
-
-            const doubleConfirm = await confirmAction(
-                "⚠️ FINAL WARNING ⚠️",
-                "This is your last chance. Enabling this means ANYONE can take or be given your account. Your Discord account could be stolen. Are you 100% certain?"
-            );
-
-            if (!doubleConfirm) return;
-
-            storage.possessAcceptFromEveryone = true;
-            sendBotMessage(ctx.channel.id, "⚠️ **POSSESSION DANGER MODE ENABLED** ⚠️\nYou will now automatically accept all possession requests. Use `/possess-accept-everyone-disable` to turn this off.");
-        },
-    });
-}
-
-export function createPossessAcceptEveryoneDisableCommand() {
-    return registerCommand({
-        name: "possess-accept-everyone-disable",
-        displayName: "possess-accept-everyone-disable",
-        description: "Disable automatically accepting possession from everyone.",
-        displayDescription: "Disable automatically accepting possession from everyone.",
-        type: ApplicationCommandType.CHAT as number,
-        inputType: ApplicationCommandInputType.BUILT_IN_TEXT as number,
-        applicationId: "-1",
-        options: [],
-        execute(args, ctx) {
-            if (!storage.possessAcceptFromEveryone) {
-                sendBotMessage(ctx.channel.id, "Auto-accept possession from everyone is already disabled.");
-                return;
-            }
-
-            storage.possessAcceptFromEveryone = false;
-            sendBotMessage(ctx.channel.id, "✅ **POSSESSION DANGER MODE DISABLED**\nYou will now receive confirmation prompts for possession requests.");
-        },
-    });
-}
-
-export function createPossessAcceptEveryoneStatusCommand() {
-    return registerCommand({
-        name: "possess-accept-everyone-status",
-        displayName: "possess-accept-everyone-status",
-        description: "Check if auto-accept possession from everyone is enabled.",
-        displayDescription: "Check if auto-accept possession from everyone is enabled.",
-        type: ApplicationCommandType.CHAT as number,
-        inputType: ApplicationCommandInputType.BUILT_IN_TEXT as number,
-        applicationId: "-1",
-        options: [],
-        execute(args, ctx) {
-            const status = storage.possessAcceptFromEveryone ? 
-                "⚠️ **ENABLED** - You are automatically accepting possession from EVERYONE!" : 
-                "✅ **DISABLED** - You will receive confirmation prompts for possession requests.";
+            const mode = args.find(arg => arg.name === "mode")?.value as string;
             
-            sendBotMessage(ctx.channel.id, `Auto-accept possession from everyone: ${status}`);
+            if (!mode || !["none", "invite", "request", "both"].includes(mode.toLowerCase())) {
+                sendBotMessage(ctx.channel.id, "❌ Invalid mode. Please choose: **none**, **invite**, **request**, or **both**.\n\n" +
+                    "• **none** - Manual confirmation for all\n" +
+                    "• **invite** - Auto-accept invites only\n" +
+                    "• **request** - Auto-accept requests only\n" +
+                    "• **both** - Auto-accept all (DANGEROUS)");
+                return;
+            }
+
+            const normalizedMode: string = mode.toLowerCase();
+
+            if (normalizedMode === "both") {
+                const isConfirmed = await confirmAction(
+                    "⚠️ EXTREMELY DANGEROUS ⚠️",
+                    "This will automatically accept ALL possession requests and invites from ANYONE without any confirmation. Your account could be given away or taken over instantly. Are you absolutely sure?"
+                );
+
+                if (!isConfirmed) return;
+
+                const doubleConfirm = await confirmAction(
+                    "⚠️ FINAL WARNING ⚠️",
+                    "This is your last chance. Enabling this means ANYONE can take or be given your account. Your Discord account could be stolen. Are you 100% certain?"
+                );
+
+                if (!doubleConfirm) return;
+            } else if (normalizedMode === "invite" || normalizedMode === "request") {
+                const isConfirmed = await confirmAction(
+                    "⚠️ WARNING ⚠️",
+                    `This will automatically accept ${normalizedMode === "invite" ? "possession invites" : "possession requests"} from anyone without confirmation. Are you sure?`
+                );
+
+                if (!isConfirmed) return;
+
+                const doubleConfirm = await confirmAction(
+                    "⚠️ FINAL WARNING ⚠️",
+                    `This is your last chance. Enabling auto-accept for ${normalizedMode === "invite" ? "possession invites" : "possession requests"} means ANYONE can ${normalizedMode === "invite" ? "give you their account" : "take over your account"} without confirmation. Are you certain?`
+                );
+
+                if (!doubleConfirm) return;
+            }
+
+            storage.possessAcceptMode = normalizedMode;
+            
+            const modeDescriptions = {
+                "none": "✅ **SAFE MODE** - Manual confirmation required for all possession requests and invites.",
+                "invite": "⚠️ **INVITE AUTO-ACCEPT** - Automatically accepting possession invites, manual confirmation for requests.",
+                "request": "⚠️ **REQUEST AUTO-ACCEPT** - Automatically accepting possession requests, manual confirmation for invites.",
+                "both": "🚨 **DANGER MODE** - Automatically accepting ALL possession requests and invites!"
+            };
+
+            sendBotMessage(ctx.channel.id, `Possession accept mode set to: **${normalizedMode}**\n${modeDescriptions[normalizedMode]}`);
+        },
+    });
+}
+
+export function createPossessAcceptModeStatusCommand() {
+    return registerCommand({
+        name: "possess-accept-mode-status",
+        displayName: "possess-accept-mode-status",
+        description: "Check the current auto-accept mode for possession requests and invites.",
+        displayDescription: "Check the current auto-accept mode for possession requests and invites.",
+        type: ApplicationCommandType.CHAT as number,
+        inputType: ApplicationCommandInputType.BUILT_IN_TEXT as number,
+        applicationId: "-1",
+        options: [],
+        execute(args, ctx) {
+            const mode = storage.possessAcceptMode || "none";
+            
+            const modeDescriptions = {
+                "none": "✅ **SAFE MODE** - Manual confirmation required for all possession requests and invites.",
+                "invite": "⚠️ **INVITE AUTO-ACCEPT** - Automatically accepting possession invites, manual confirmation for requests.",
+                "request": "⚠️ **REQUEST AUTO-ACCEPT** - Automatically accepting possession requests, manual confirmation for invites.",
+                "both": "🚨 **DANGER MODE** - Automatically accepting ALL possession requests and invites!"
+            };
+
+            sendBotMessage(ctx.channel.id, `Current possession accept mode: **${mode}**\n${modeDescriptions[mode]}`);
         },
     });
 }

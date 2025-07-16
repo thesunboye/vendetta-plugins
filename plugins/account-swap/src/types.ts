@@ -45,3 +45,20 @@ export type MessageModule = {
 export type AccountModule = {
     switchAccountToken(token: string);
 };
+
+export interface ApplicationCommandOption {
+    name: string;
+    displayName: string;
+    description: string;
+    displayDescription: string;
+    type: number;
+    required?: boolean;
+    choices?: ApplicationCommandOptionChoice[];
+}
+
+export interface ApplicationCommandOptionChoice {
+    name: string;
+    displayName: string;
+    label: string;
+    value: string;
+}

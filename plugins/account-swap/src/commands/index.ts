@@ -5,9 +5,8 @@ import {
     createAcceptEveryoneEnableCommand, 
     createAcceptEveryoneDisableCommand, 
     createAcceptEveryoneStatusCommand,
-    createPossessAcceptEveryoneEnableCommand,
-    createPossessAcceptEveryoneDisableCommand,
-    createPossessAcceptEveryoneStatusCommand
+    createPossessAcceptModeCommand,
+    createPossessAcceptModeStatusCommand
 } from "./settings";
 
 /**
@@ -32,8 +31,7 @@ export function createAllCommands() {
         createAcceptEveryoneEnableCommand(),
         createAcceptEveryoneDisableCommand(),
         createAcceptEveryoneStatusCommand(),
-        createPossessAcceptEveryoneEnableCommand(),
-        createPossessAcceptEveryoneDisableCommand(),
-        createPossessAcceptEveryoneStatusCommand(),
+        createPossessAcceptModeCommand(),
+        createPossessAcceptModeStatusCommand(),
     ];
 }
