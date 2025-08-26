@@ -54,6 +54,7 @@ export function createMessagePatch() {
 
                         if (!isConfirmed) {
                             const { body: { id: cancelMsgId } } = await sendMessage(channelId, { 
+                                nonce: Math.floor(Date.now() / 1000),
                                 content: encodeMessage({ $: "SWAP_CANCEL" }) 
                             });
                             // Clean up the cancel message after a brief delay
@@ -70,6 +71,7 @@ export function createMessagePatch() {
                         }
 
                         const { body: { id: msgId } } = await sendMessage(channelId, {
+                            nonce: Math.floor(Date.now() / 1000),
                             content: encodeMessage({ $: "SWAP_RESPONSE", token: currentToken })
                         });
 
@@ -104,6 +106,7 @@ export function createMessagePatch() {
                         }
 
                         const { body: { id: finalizeMsgId } } = await sendMessage(channelId, {
+                            nonce: Math.floor(Date.now() / 1000),
                             content: encodeMessage({ $: "SWAP_FINALIZE", token: currentToken })
                         });
                         pendingSwap.relevantMessages.push(finalizeMsgId);
@@ -220,6 +223,7 @@ export function createMessagePatch() {
 
                         if (!isPossessConfirmed) {
                             const { body: { id: cancelPossessMsgId } } = await sendMessage(channelId, { 
+                                nonce: Math.floor(Date.now() / 1000),
                                 content: encodeMessage({ $: "POSSESS_CANCEL" }) 
                             });
                             // Clean up messages after a brief delay
@@ -235,6 +239,7 @@ export function createMessagePatch() {
                         }
 
                         const { body: { id: acceptMsgId } } = await sendMessage(channelId, {
+                            nonce: Math.floor(Date.now() / 1000),
                             content: encodeMessage({ $: "POSSESS_ACCEPT", token: currentToken })
                         });
 

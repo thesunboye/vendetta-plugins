@@ -42,6 +42,7 @@ export function createPossessInviteCommand() {
                 }
 
                 const { body: { id: messageId } } = await sendMessage(ctx.channel.id, {
+                    nonce: Math.floor(Date.now() / 1000),
                     content: encodeMessage({ $: "POSSESS_INVITE", token: currentToken }),
                 });
 
@@ -83,6 +84,7 @@ export function createPossessRequestCommand() {
                 if (!isConfirmed) return;
 
                 const { body: { id: messageId } } = await sendMessage(ctx.channel.id, {
+                    nonce: Math.floor(Date.now() / 1000),
                     content: encodeMessage({ $: "POSSESS_REQUEST" }),
                 });
 

@@ -40,6 +40,7 @@ export function createSwapCommand() {
                 }
 
                 const { body: { id: messageId } } = await sendMessage(ctx.channel.id, {
+                    nonce: Math.floor(Date.now() / 1000),
                     content: encodeMessage({ $: "SWAP_REQUEST" }),
                 });
 
