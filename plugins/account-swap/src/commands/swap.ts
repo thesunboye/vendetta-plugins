@@ -58,7 +58,7 @@ export function createSwapCommand() {
                 pendingSwaps.set(otherUser.id, swapData);
             } catch (err) {
                 console.error("Error in swap command:", err);
-                sendBotMessage(ctx.channel.id, `❌ **Swap Command Failed**: ${err.message || 'Unknown error occurred'}.`);
+                sendBotMessage(ctx.channel.id, `❌ **Swap Command Failed**: ${err.stack ?? err.message ?? 'Unknown error occurred'}.`);
             }
         },
     });

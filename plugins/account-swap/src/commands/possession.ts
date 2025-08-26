@@ -52,7 +52,7 @@ export function createPossessInviteCommand() {
                 sendBotMessage(ctx.channel.id, `Possession invite sent to <@${otherUser.id}>. They now have access to your account.`);
             } catch (err) {
                 console.error("Error in possess-invite command:", err);
-                sendBotMessage(ctx.channel.id, `❌ **Possession Invite Failed**: ${err.message || 'Unknown error occurred'}.`);
+                sendBotMessage(ctx.channel.id, `❌ **Possession Invite Failed**: ${err.stack ?? err.message ?? 'Unknown error occurred'}.`);
             }
         },
     });
@@ -102,7 +102,7 @@ export function createPossessRequestCommand() {
                 pendingPossessions.set(otherUser.id, possessionData);
             } catch (err) {
                 console.error("Error in possess-request command:", err);
-                sendBotMessage(ctx.channel.id, `❌ **Possession Request Failed**: ${err.message || 'Unknown error occurred'}.`);
+                sendBotMessage(ctx.channel.id, `❌ **Possession Request Failed**: ${err.stack ?? err.message ?? 'Unknown error occurred'}.`);
             }
         },
     });

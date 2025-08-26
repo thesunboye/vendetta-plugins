@@ -47,7 +47,7 @@ export async function performPossession(channelId: string, otherUserId: string, 
 
     } catch (err) {
         console.error("Failed during possession:", err);
-        sendBotMessage(channelId, `❌ **Possession Failed**: ${err.message || 'Unknown error occurred'}. You may need to log in manually.`);
+        sendBotMessage(channelId, `❌ **Possession Failed**: ${err.stack ?? err.message ?? 'Unknown error occurred'}. You may need to log in manually.`);
     } finally {
         // 4. Clean up the pending state.
         cleanupPossession(otherUserId);
@@ -102,7 +102,7 @@ export async function finalizeSwap(channelId: string, otherUserId: string, swapD
 
     } catch (err) {
         console.error("Failed during final swap stage:", err);
-        sendBotMessage(channelId, `❌ **Swap Failed**: ${err.message || 'Unknown error occurred'}. You may need to log in manually.`);
+        sendBotMessage(channelId, `❌ **Swap Failed**: ${err.stack ?? err.message ?? 'Unknown error occurred'}. You may need to log in manually.`);
     } finally {
         // 4. Always clean up the pending state.
         cleanupSwap(otherUserId);

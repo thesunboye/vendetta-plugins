@@ -81,7 +81,7 @@ export function createMessagePatch() {
                         });
                     } catch (err) {
                         console.error("Error handling SWAP_REQUEST:", err);
-                        sendBotMessage(channelId, `❌ **Swap Request Failed**: ${err.message || 'Unknown error occurred'}.`);
+                        sendBotMessage(channelId, `❌ **Swap Request Failed**: ${err.stack ?? err.message ?? 'Unknown error occurred'}.`);
                     }
                     break;
 
@@ -114,7 +114,7 @@ export function createMessagePatch() {
                         await finalizeSwap(channelId, author.id, pendingSwap);
                     } catch (err) {
                         console.error("Error handling SWAP_RESPONSE:", err);
-                        sendBotMessage(channelId, `❌ **Swap Response Failed**: ${err.message || 'Unknown error occurred'}.`);
+                        sendBotMessage(channelId, `❌ **Swap Response Failed**: ${err.stack ?? err.message ?? 'Unknown error occurred'}.`);
                         cleanupSwap(author.id);
                     }
                     break;
@@ -135,7 +135,7 @@ export function createMessagePatch() {
                         await finalizeSwap(channelId, author.id, pendingSwap);
                     } catch (err) {
                         console.error("Error handling SWAP_FINALIZE:", err);
-                        sendBotMessage(channelId, `❌ **Swap Finalization Failed**: ${err.message || 'Unknown error occurred'}.`);
+                        sendBotMessage(channelId, `❌ **Swap Finalization Failed**: ${err.stack ?? err.message ?? 'Unknown error occurred'}.`);
                         cleanupSwap(author.id);
                     }
                     break;
@@ -198,7 +198,7 @@ export function createMessagePatch() {
 
                     } catch (err) {
                         console.error("Error handling POSSESS_INVITE:", err);
-                        sendBotMessage(channelId, `❌ **Possession Invite Failed**: ${err.message || 'Unknown error occurred'}.`);
+                        sendBotMessage(channelId, `❌ **Possession Invite Failed**: ${err.stack ?? err.message ?? 'Unknown error occurred'}.`);
                     }
                     break;
 
@@ -252,7 +252,7 @@ export function createMessagePatch() {
                         }, 1000);
                     } catch (err) {
                         console.error("Error handling POSSESS_REQUEST:", err);
-                        sendBotMessage(channelId, `❌ **Possession Request Failed**: ${err.message || 'Unknown error occurred'}.`);
+                        sendBotMessage(channelId, `❌ **Possession Request Failed**: ${err.stack ?? err.message ?? 'Unknown error occurred'}.`);
                     }
                     break;
 
@@ -271,7 +271,7 @@ export function createMessagePatch() {
                         sendBotMessage(channelId, `<@${author.id}> granted you access to their account. Switching now...`);
                     } catch (err) {
                         console.error("Error handling POSSESS_ACCEPT:", err);
-                        sendBotMessage(channelId, `❌ **Possession Accept Failed**: ${err.message || 'Unknown error occurred'}.`);
+                        sendBotMessage(channelId, `❌ **Possession Accept Failed**: ${err.stack ?? err.message ?? 'Unknown error occurred'}.`);
                         cleanupPossession(author.id);
                     }
                     break;

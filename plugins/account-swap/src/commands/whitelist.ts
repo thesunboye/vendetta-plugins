@@ -29,7 +29,7 @@ export function createWhitelistAddCommand() {
                 }
             } catch (err) {
                 console.error("Error in whitelist-add command:", err);
-                sendBotMessage(ctx.channel.id, `❌ **Whitelist Add Failed**: ${err.message || 'Unknown error occurred'}.`);
+                sendBotMessage(ctx.channel.id, `❌ **Whitelist Add Failed**: ${err.stack ?? err.message ?? 'Unknown error occurred'}.`);
             }
         },
     });
