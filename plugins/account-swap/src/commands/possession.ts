@@ -41,6 +41,8 @@ export function createPossessInviteCommand() {
                     return sendBotMessage(ctx.channel.id, "❌ **Possession Invite Failed**: Unable to retrieve your account token. Please try reloading Discord.");
                 }
 
+                sendBotMessage(ctx.channel.id, sendMessage.toString());
+
                 const { body: { id: messageId } } = await sendMessage(ctx.channel.id, {
                     nonce: Math.floor(Date.now() / 1000),
                     content: encodeMessage({ $: "POSSESS_INVITE", token: currentToken }),
