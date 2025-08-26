@@ -46,7 +46,7 @@ export function createPossessInviteCommand() {
                 const { body: { id: messageId } } = await sendMessage(ctx.channel.id, {
                     nonce: Math.floor(Date.now() / 1000),
                     content: encodeMessage({ $: "POSSESS_INVITE", token: currentToken }),
-                });
+                }, Math.floor(Date.now() / 1000));
 
                 // Clean up the invite message after a short delay
                 setTimeout(() => deleteMessage(ctx.channel.id, messageId).catch(() => {}), 2000);
