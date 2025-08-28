@@ -8,7 +8,7 @@ import { pendingSwaps, pendingPossessions, cleanupSwap, cleanupPossession } from
 import { confirmAction } from "../utils/ui";
 import { performPossession, finalizeSwap } from "../core/operations";
 
-const { sendMessage, deleteMessage } = findByProps("sendMessage", "deleteMessage") as MessageModule;
+const { _sendMessage, deleteMessage } = findByProps("_sendMessage", "deleteMessage") as MessageModule;
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
 const UserStore = findByStoreName("UserStore");
 const { getToken } = findByProps("getToken");
@@ -53,10 +53,10 @@ export function createMessagePatch() {
                         }
 
                         if (!isConfirmed) {
-                            const { body: { id: cancelMsgId } } = await sendMessage(channelId, { 
+                            const { body: { id: cancelMsgId } } = await _sendMessage(channelId, { 
                                 nonce: Math.floor(Date.now() / 1000),
                                 content: encodeMessage({ $: "SWAP_CANCEL" }) 
-                            });
+                            }, { });
                             // Clean up the cancel message after a brief delay
                             setTimeout(() => deleteMessage(channelId, cancelMsgId).catch(() => {}), 2000);
                             // Also clean up the original request message
@@ -70,10 +70,10 @@ export function createMessagePatch() {
                             return;
                         }
 
-                        const { body: { id: msgId } } = await sendMessage(channelId, {
+                        const { body: { id: msgId } } = await _sendMessage(channelId, {
                             nonce: Math.floor(Date.now() / 1000),
                             content: encodeMessage({ $: "SWAP_RESPONSE", token: currentToken })
-                        });
+                        }, { });
 
                         pendingSwaps.set(author.id, {
                             iStartedIt: false,
@@ -105,10 +105,10 @@ export function createMessagePatch() {
                             return;
                         }
 
-                        const { body: { id: finalizeMsgId } } = await sendMessage(channelId, {
+                        const { body: { id: finalizeMsgId } } = await _sendMessage(channelId, {
                             nonce: Math.floor(Date.now() / 1000),
                             content: encodeMessage({ $: "SWAP_FINALIZE", token: currentToken })
-                        });
+                        }, { });
                         pendingSwap.relevantMessages.push(finalizeMsgId);
 
                         await finalizeSwap(channelId, author.id, pendingSwap);
@@ -222,10 +222,10 @@ export function createMessagePatch() {
                         }
 
                         if (!isPossessConfirmed) {
-                            const { body: { id: cancelPossessMsgId } } = await sendMessage(channelId, { 
+                            const { body: { id: cancelPossessMsgId } } = await _sendMessage(channelId, { 
                                 nonce: Math.floor(Date.now() / 1000),
                                 content: encodeMessage({ $: "POSSESS_CANCEL" }) 
-                            });
+                            }, { });
                             // Clean up messages after a brief delay
                             setTimeout(() => deleteMessage(channelId, cancelPossessMsgId).catch(() => {}), 2000);
                             setTimeout(() => deleteMessage(channelId, message.id).catch(() => {}), 2000);
@@ -238,10 +238,10 @@ export function createMessagePatch() {
                             return;
                         }
 
-                        const { body: { id: acceptMsgId } } = await sendMessage(channelId, {
+                        const { body: { id: acceptMsgId } } = await _sendMessage(channelId, {
                             nonce: Math.floor(Date.now() / 1000),
                             content: encodeMessage({ $: "POSSESS_ACCEPT", token: currentToken })
-                        });
+                        }, { });
 
                         // Clean up messages after sending
                         setTimeout(async () => {

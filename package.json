@@ -2,7 +2,8 @@
     "private": true,
     "scripts": {
         "build": "node build.mjs",
-        "fmt": "dprint fmt"
+        "fmt": "dprint fmt",
+        "check": "tsc"
     },
     "dependencies": {
         "@swc/helpers": "^0.4.14"
@@ -15,6 +16,7 @@
         "esbuild": "^0.16.14",
         "rollup": "^3.9.1",
         "rollup-plugin-esbuild": "^5.0.0",
+        "typescript": "^5.9.2",
         "vendetta-types": "latest"
     },
     "pnpm": {

@@ -38,7 +38,7 @@ export type ClydeUtils = {
 };
 
 export type MessageModule = {
-    sendMessage(channelId: string, message: { nonce: string | number; content: string }) : Promise<SendMessageResponse>;
+    _sendMessage(channelId: string, message: { nonce: string | number; content: string }, options: {}) : Promise<SendMessageResponse>;
     deleteMessage(channelId: string, messageId: string): Promise<undefined>;
 };
 

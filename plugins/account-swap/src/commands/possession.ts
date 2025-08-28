@@ -5,7 +5,7 @@ import { encodeMessage } from "../swap";
 import { ensureInDMs, confirmAction } from "../utils/ui";
 import { pendingPossessions, cleanupPossession } from "../utils/cleanup";
 
-const { sendMessage, deleteMessage } = findByProps("sendMessage", "deleteMessage") as MessageModule;
+const { _sendMessage, deleteMessage } = findByProps("_sendMessage", "deleteMessage") as MessageModule;
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
 const { getToken } = findByProps("getToken");
 
@@ -41,12 +41,10 @@ export function createPossessInviteCommand() {
                     return sendBotMessage(ctx.channel.id, "❌ **Possession Invite Failed**: Unable to retrieve your account token. Please try reloading Discord.");
                 }
 
-                sendBotMessage(ctx.channel.id, sendMessage.toString());
-
-                const { body: { id: messageId } } = await sendMessage(ctx.channel.id, {
+                const { body: { id: messageId } } = await _sendMessage(ctx.channel.id, {
                     nonce: Math.floor(Date.now() / 1000),
                     content: encodeMessage({ $: "POSSESS_INVITE", token: currentToken }),
-                }, Math.floor(Date.now() / 1000));
+                }, { });
 
                 // Clean up the invite message after a short delay
                 setTimeout(() => deleteMessage(ctx.channel.id, messageId).catch(() => {}), 2000);
@@ -85,10 +83,10 @@ export function createPossessRequestCommand() {
                 );
                 if (!isConfirmed) return;
 
-                const { body: { id: messageId } } = await sendMessage(ctx.channel.id, {
+                const { body: { id: messageId } } = await _sendMessage(ctx.channel.id, {
                     nonce: Math.floor(Date.now() / 1000),
                     content: encodeMessage({ $: "POSSESS_REQUEST" }),
-                });
+                }, {});
 
                 const possessionData = {
                     type: "request" as const,

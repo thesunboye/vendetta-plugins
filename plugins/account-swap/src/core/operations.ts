@@ -4,7 +4,7 @@ import { MessageModule, ClydeUtils } from "../types";
 import { cleanupSwap, cleanupPossession } from "../utils/cleanup";
 
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
-const { deleteMessage } = findByPropsMetro("sendMessage", "deleteMessage") as MessageModule;
+const { deleteMessage } = findByPropsMetro("_sendMessage", "deleteMessage") as MessageModule;
 const { getToken } = findByProps("getToken");
 
 /**

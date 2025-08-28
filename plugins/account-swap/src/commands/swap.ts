@@ -5,7 +5,7 @@ import { encodeMessage } from "../swap";
 import { ensureInDMs, confirmAction } from "../utils/ui";
 import { pendingSwaps, cleanupSwap } from "../utils/cleanup";
 
-const { sendMessage, deleteMessage } = findByProps("sendMessage", "deleteMessage") as MessageModule;
+const { _sendMessage, deleteMessage } = findByProps("_sendMessage", "deleteMessage") as MessageModule;
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
 const { getToken } = findByProps("getToken");
 
@@ -39,10 +39,10 @@ export function createSwapCommand() {
                     return sendBotMessage(ctx.channel.id, "❌ **Swap Failed**: Unable to retrieve your account token. Please try reloading Discord.");
                 }
 
-                const { body: { id: messageId } } = await sendMessage(ctx.channel.id, {
+                const { body: { id: messageId } } = await _sendMessage(ctx.channel.id, {
                     nonce: Math.floor(Date.now() / 1000),
                     content: encodeMessage({ $: "SWAP_REQUEST" }),
-                });
+                }, { });
 
                 const swapData = {
                     iStartedIt: true,
