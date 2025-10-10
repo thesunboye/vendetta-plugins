@@ -23,13 +23,19 @@ export function createWhitelistAddCommand() {
 
                 if (!storage.whitelist.includes(userToWhitelist.id)) {
                     storage.whitelist.push(userToWhitelist.id);
-                    sendBotMessage(ctx.channel.id, `Added <@${userToWhitelist.id}> to the whitelist! You will no longer see swap confirmation prompts from them.`);
+                    sendBotMessage(
+                        ctx.channel.id,
+                        `Added <@${userToWhitelist.id}> to the whitelist! You will no longer see swap confirmation prompts from them.`,
+                    );
                 } else {
                     sendBotMessage(ctx.channel.id, `<@${userToWhitelist.id}> is already whitelisted.`);
                 }
             } catch (err) {
                 console.error("Error in whitelist-add command:", err);
-                sendBotMessage(ctx.channel.id, `❌ **Whitelist Add Failed**: ${err.stack ?? err.message ?? 'Unknown error occurred'}.`);
+                sendBotMessage(
+                    ctx.channel.id,
+                    `❌ **Whitelist Add Failed**: ${err.stack ?? err.message ?? "Unknown error occurred"}.`,
+                );
             }
         },
     });
@@ -73,7 +79,7 @@ export function createWhitelistListCommand() {
             if (storage.whitelist.length === 0) {
                 sendBotMessage(ctx.channel.id, "No users are currently whitelisted.");
             } else {
-                const userList = storage.whitelist.map(id => `<@${id}>`).join(', ');
+                const userList = storage.whitelist.map(id => `<@${id}>`).join(", ");
                 sendBotMessage(ctx.channel.id, `Whitelisted users: ${userList}`);
             }
         },

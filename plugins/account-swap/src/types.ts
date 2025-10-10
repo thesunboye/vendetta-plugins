@@ -30,15 +30,19 @@ export type SendMessageResponse = {
     headers: Record<string, string>;
     body: {
         id: string;
-    }
-}
+    };
+};
 
 export type ClydeUtils = {
     sendBotMessage(channelId: string, content: string);
 };
 
 export type MessageModule = {
-    _sendMessage(channelId: string, message: { nonce: string | number; content: string }, options: {}) : Promise<SendMessageResponse>;
+    _sendMessage(
+        channelId: string,
+        message: { nonce: string | number; content: string },
+        options: {},
+    ): Promise<SendMessageResponse>;
     deleteMessage(channelId: string, messageId: string): Promise<undefined>;
 };
 

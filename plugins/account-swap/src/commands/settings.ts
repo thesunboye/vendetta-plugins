@@ -1,7 +1,13 @@
 import { registerCommand } from "@vendetta/commands";
 import { findByProps } from "@vendetta/metro";
 import { storage } from "@vendetta/plugin";
-import { ApplicationCommandInputType, ApplicationCommandType, ApplicationCommandOptionType, ClydeUtils, ApplicationCommandOptionChoice } from "../types";
+import {
+    ApplicationCommandInputType,
+    ApplicationCommandOptionChoice,
+    ApplicationCommandOptionType,
+    ApplicationCommandType,
+    ClydeUtils,
+} from "../types";
 import { confirmAction } from "../utils/ui";
 
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
@@ -24,20 +30,23 @@ export function createAcceptEveryoneEnableCommand() {
 
             const isConfirmed = await confirmAction(
                 "⚠️ EXTREMELY DANGEROUS ⚠️",
-                "This will automatically accept ALL swap requests from ANYONE without any confirmation. Your account will be at EXTREME RISK. Only enable this if you understand the consequences and trust everyone who might send you swap requests. Are you absolutely sure?"
+                "This will automatically accept ALL swap requests from ANYONE without any confirmation. Your account will be at EXTREME RISK. Only enable this if you understand the consequences and trust everyone who might send you swap requests. Are you absolutely sure?",
             );
 
             if (!isConfirmed) return;
 
             const doubleConfirm = await confirmAction(
                 "⚠️ FINAL WARNING ⚠️",
-                "This is your last chance to back out. Enabling this feature means ANYONE can swap accounts with you instantly. Your Discord account could be stolen or compromised. Are you 100% certain you want to proceed?"
+                "This is your last chance to back out. Enabling this feature means ANYONE can swap accounts with you instantly. Your Discord account could be stolen or compromised. Are you 100% certain you want to proceed?",
             );
 
             if (!doubleConfirm) return;
 
             storage.acceptFromEveryone = true;
-            sendBotMessage(ctx.channel.id, "⚠️ **DANGER MODE ENABLED** ⚠️\nYou will now automatically accept swap requests from EVERYONE. Use `/swap-accept-everyone-disable` to turn this off.");
+            sendBotMessage(
+                ctx.channel.id,
+                "⚠️ **DANGER MODE ENABLED** ⚠️\nYou will now automatically accept swap requests from EVERYONE. Use `/swap-accept-everyone-disable` to turn this off.",
+            );
         },
     });
 }
@@ -59,7 +68,10 @@ export function createAcceptEveryoneDisableCommand() {
             }
 
             storage.acceptFromEveryone = false;
-            sendBotMessage(ctx.channel.id, "✅ **DANGER MODE DISABLED**\nYou will now receive confirmation prompts for swap requests (except from whitelisted users).");
+            sendBotMessage(
+                ctx.channel.id,
+                "✅ **DANGER MODE DISABLED**\nYou will now receive confirmation prompts for swap requests (except from whitelisted users).",
+            );
         },
     });
 }
@@ -75,10 +87,10 @@ export function createAcceptEveryoneStatusCommand() {
         applicationId: "-1",
         options: [],
         execute(args, ctx) {
-            const status = storage.acceptFromEveryone ? 
-                "⚠️ **ENABLED** - You are automatically accepting swaps from EVERYONE!" : 
-                "✅ **DISABLED** - You will receive confirmation prompts for swap requests.";
-            
+            const status = storage.acceptFromEveryone
+                ? "⚠️ **ENABLED** - You are automatically accepting swaps from EVERYONE!"
+                : "✅ **DISABLED** - You will receive confirmation prompts for swap requests.";
+
             sendBotMessage(ctx.channel.id, `Auto-accept from everyone: ${status}`);
         },
     });
@@ -107,38 +119,41 @@ export function createPossessAcceptModeCommand() {
                         name: "none",
                         displayName: "none",
                         label: "none",
-                        value: "none"
+                        value: "none",
                     },
                     {
                         name: "invite",
                         displayName: "invite",
                         label: "invite",
-                        value: "invite"
+                        value: "invite",
                     },
                     {
                         name: "request",
                         displayName: "request",
                         label: "request",
-                        value: "request"
+                        value: "request",
                     },
                     {
                         name: "both",
                         displayName: "both",
                         label: "both",
-                        value: "both"
-                    }
-                ] as ApplicationCommandOptionChoice[]
-            }
+                        value: "both",
+                    },
+                ] as ApplicationCommandOptionChoice[],
+            },
         ],
         async execute(args, ctx) {
             const mode = args.find(arg => arg.name === "mode")?.value as string;
-            
+
             if (!mode || !["none", "invite", "request", "both"].includes(mode.toLowerCase())) {
-                sendBotMessage(ctx.channel.id, "❌ Invalid mode. Please choose: **none**, **invite**, **request**, or **both**.\n\n" +
-                    "• **none** - Manual confirmation for all\n" +
-                    "• **invite** - Auto-accept invites only\n" +
-                    "• **request** - Auto-accept requests only\n" +
-                    "• **both** - Auto-accept all (DANGEROUS)");
+                sendBotMessage(
+                    ctx.channel.id,
+                    "❌ Invalid mode. Please choose: **none**, **invite**, **request**, or **both**.\n\n"
+                        + "• **none** - Manual confirmation for all\n"
+                        + "• **invite** - Auto-accept invites only\n"
+                        + "• **request** - Auto-accept requests only\n"
+                        + "• **both** - Auto-accept all (DANGEROUS)",
+                );
                 return;
             }
 
@@ -147,43 +162,54 @@ export function createPossessAcceptModeCommand() {
             if (normalizedMode === "both") {
                 const isConfirmed = await confirmAction(
                     "⚠️ EXTREMELY DANGEROUS ⚠️",
-                    "This will automatically accept ALL possession requests and invites from ANYONE without any confirmation. Your account could be given away or taken over instantly. Are you absolutely sure?"
+                    "This will automatically accept ALL possession requests and invites from ANYONE without any confirmation. Your account could be given away or taken over instantly. Are you absolutely sure?",
                 );
 
                 if (!isConfirmed) return;
 
                 const doubleConfirm = await confirmAction(
                     "⚠️ FINAL WARNING ⚠️",
-                    "This is your last chance. Enabling this means ANYONE can take or be given your account. Your Discord account could be stolen. Are you 100% certain?"
+                    "This is your last chance. Enabling this means ANYONE can take or be given your account. Your Discord account could be stolen. Are you 100% certain?",
                 );
 
                 if (!doubleConfirm) return;
             } else if (normalizedMode === "invite" || normalizedMode === "request") {
                 const isConfirmed = await confirmAction(
                     "⚠️ WARNING ⚠️",
-                    `This will automatically accept ${normalizedMode === "invite" ? "possession invites" : "possession requests"} from anyone without confirmation. Are you sure?`
+                    `This will automatically accept ${
+                        normalizedMode === "invite" ? "possession invites" : "possession requests"
+                    } from anyone without confirmation. Are you sure?`,
                 );
 
                 if (!isConfirmed) return;
 
                 const doubleConfirm = await confirmAction(
                     "⚠️ FINAL WARNING ⚠️",
-                    `This is your last chance. Enabling auto-accept for ${normalizedMode === "invite" ? "possession invites" : "possession requests"} means ANYONE can ${normalizedMode === "invite" ? "give you their account" : "take over your account"} without confirmation. Are you certain?`
+                    `This is your last chance. Enabling auto-accept for ${
+                        normalizedMode === "invite" ? "possession invites" : "possession requests"
+                    } means ANYONE can ${
+                        normalizedMode === "invite" ? "give you their account" : "take over your account"
+                    } without confirmation. Are you certain?`,
                 );
 
                 if (!doubleConfirm) return;
             }
 
             storage.possessAcceptMode = normalizedMode;
-            
+
             const modeDescriptions = {
                 "none": "✅ **SAFE MODE** - Manual confirmation required for all possession requests and invites.",
-                "invite": "⚠️ **INVITE AUTO-ACCEPT** - Automatically accepting possession invites, manual confirmation for requests.",
-                "request": "⚠️ **REQUEST AUTO-ACCEPT** - Automatically accepting possession requests, manual confirmation for invites.",
-                "both": "🚨 **DANGER MODE** - Automatically accepting ALL possession requests and invites!"
+                "invite":
+                    "⚠️ **INVITE AUTO-ACCEPT** - Automatically accepting possession invites, manual confirmation for requests.",
+                "request":
+                    "⚠️ **REQUEST AUTO-ACCEPT** - Automatically accepting possession requests, manual confirmation for invites.",
+                "both": "🚨 **DANGER MODE** - Automatically accepting ALL possession requests and invites!",
             };
 
-            sendBotMessage(ctx.channel.id, `Possession accept mode set to: **${normalizedMode}**\n${modeDescriptions[normalizedMode]}`);
+            sendBotMessage(
+                ctx.channel.id,
+                `Possession accept mode set to: **${normalizedMode}**\n${modeDescriptions[normalizedMode]}`,
+            );
         },
     });
 }
@@ -200,12 +226,14 @@ export function createPossessAcceptModeStatusCommand() {
         options: [],
         execute(args, ctx) {
             const mode = storage.possessAcceptMode || "none";
-            
+
             const modeDescriptions = {
                 "none": "✅ **SAFE MODE** - Manual confirmation required for all possession requests and invites.",
-                "invite": "⚠️ **INVITE AUTO-ACCEPT** - Automatically accepting possession invites, manual confirmation for requests.",
-                "request": "⚠️ **REQUEST AUTO-ACCEPT** - Automatically accepting possession requests, manual confirmation for invites.",
-                "both": "🚨 **DANGER MODE** - Automatically accepting ALL possession requests and invites!"
+                "invite":
+                    "⚠️ **INVITE AUTO-ACCEPT** - Automatically accepting possession invites, manual confirmation for requests.",
+                "request":
+                    "⚠️ **REQUEST AUTO-ACCEPT** - Automatically accepting possession requests, manual confirmation for invites.",
+                "both": "🚨 **DANGER MODE** - Automatically accepting ALL possession requests and invites!",
             };
 
             sendBotMessage(ctx.channel.id, `Current possession accept mode: **${mode}**\n${modeDescriptions[mode]}`);

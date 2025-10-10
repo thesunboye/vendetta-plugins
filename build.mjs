@@ -41,7 +41,7 @@ const plugins = [
                         "transform-arrow-functions",
                     ],
                 },
-                sourceMaps: true
+                sourceMaps: true,
             });
             return result.code;
         },

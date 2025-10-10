@@ -51,13 +51,13 @@ export const cleanupAll = () => {
             clearTimeout(swapData.timeout);
         }
     });
-    
+
     pendingPossessions.forEach((possessionData) => {
         if (possessionData.timeout) {
             clearTimeout(possessionData.timeout);
         }
     });
-    
+
     pendingSwaps.clear();
     pendingPossessions.clear();
 };

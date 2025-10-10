@@ -1,7 +1,7 @@
 import { findByProps } from "@vendetta/metro";
 import { findByProps as findByPropsMetro } from "@vendetta/metro";
-import { MessageModule, ClydeUtils } from "../types";
-import { cleanupSwap, cleanupPossession } from "../utils/cleanup";
+import { ClydeUtils, MessageModule } from "../types";
+import { cleanupPossession, cleanupSwap } from "../utils/cleanup";
 
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
 const { deleteMessage } = findByPropsMetro("_sendMessage", "deleteMessage") as MessageModule;
@@ -20,10 +20,10 @@ export async function performPossession(channelId: string, otherUserId: string, 
 
         // 1. Delete all possession-related messages to hide the exchange.
         const deleteResults = await Promise.allSettled(
-            messages.map(msgId => deleteMessage(channelId, msgId))
+            messages.map(msgId => deleteMessage(channelId, msgId)),
         );
-        
-        const failedDeletes = deleteResults.filter(result => result.status === 'rejected').length;
+
+        const failedDeletes = deleteResults.filter(result => result.status === "rejected").length;
         if (failedDeletes > 0) {
             console.warn(`Failed to delete ${failedDeletes} possession messages`);
             // Don't fail the whole operation for message deletion failures
@@ -41,13 +41,20 @@ export async function performPossession(channelId: string, otherUserId: string, 
             authModule.switchAccountToken(token);
         } catch (switchError) {
             console.error("Token switch failed:", switchError);
-            sendBotMessage(channelId, "❌ **Possession Failed**: Unable to switch accounts. The token may be invalid or expired.");
+            sendBotMessage(
+                channelId,
+                "❌ **Possession Failed**: Unable to switch accounts. The token may be invalid or expired.",
+            );
             return;
         }
-
     } catch (err) {
         console.error("Failed during possession:", err);
-        sendBotMessage(channelId, `❌ **Possession Failed**: ${err.stack ?? err.message ?? 'Unknown error occurred'}. You may need to log in manually.`);
+        sendBotMessage(
+            channelId,
+            `❌ **Possession Failed**: ${
+                err.stack ?? err.message ?? "Unknown error occurred"
+            }. You may need to log in manually.`,
+        );
     } finally {
         // 4. Clean up the pending state.
         cleanupPossession(otherUserId);
@@ -57,7 +64,11 @@ export async function performPossession(channelId: string, otherUserId: string, 
 /**
  * Finalizes a swap by deleting messages, switching tokens, and clearing state.
  */
-export async function finalizeSwap(channelId: string, otherUserId: string, swapData: { newToken?: string; relevantMessages: string[] }) {
+export async function finalizeSwap(
+    channelId: string,
+    otherUserId: string,
+    swapData: { newToken?: string; relevantMessages: string[] },
+) {
     if (!swapData?.newToken) {
         console.error("Swap Error: Cannot finalize swap, new token is missing.");
         sendBotMessage(channelId, "❌ **Swap Failed**: Critical error - missing token data. No action was taken.");
@@ -75,10 +86,10 @@ export async function finalizeSwap(channelId: string, otherUserId: string, swapD
 
         // 1. Delete all swap-related messages to hide the exchange.
         const deleteResults = await Promise.allSettled(
-            swapData.relevantMessages.map(msgId => deleteMessage(channelId, msgId))
+            swapData.relevantMessages.map(msgId => deleteMessage(channelId, msgId)),
         );
-        
-        const failedDeletes = deleteResults.filter(result => result.status === 'rejected').length;
+
+        const failedDeletes = deleteResults.filter(result => result.status === "rejected").length;
         if (failedDeletes > 0) {
             console.warn(`Failed to delete ${failedDeletes} swap messages`);
             sendBotMessage(channelId, "⚠️ **Warning**: Some messages couldn't be cleaned up, but swap will continue.");
@@ -96,13 +107,20 @@ export async function finalizeSwap(channelId: string, otherUserId: string, swapD
             authModule.switchAccountToken(swapData.newToken);
         } catch (switchError) {
             console.error("Token switch failed:", switchError);
-            sendBotMessage(channelId, "❌ **Swap Failed**: Unable to switch accounts. The token may be invalid or expired.");
+            sendBotMessage(
+                channelId,
+                "❌ **Swap Failed**: Unable to switch accounts. The token may be invalid or expired.",
+            );
             return;
         }
-
     } catch (err) {
         console.error("Failed during final swap stage:", err);
-        sendBotMessage(channelId, `❌ **Swap Failed**: ${err.stack ?? err.message ?? 'Unknown error occurred'}. You may need to log in manually.`);
+        sendBotMessage(
+            channelId,
+            `❌ **Swap Failed**: ${
+                err.stack ?? err.message ?? "Unknown error occurred"
+            }. You may need to log in manually.`,
+        );
     } finally {
         // 4. Always clean up the pending state.
         cleanupSwap(otherUserId);

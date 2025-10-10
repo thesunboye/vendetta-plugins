@@ -1,9 +1,9 @@
 import { registerCommand } from "@vendetta/commands";
 import { findByProps } from "@vendetta/metro";
-import { ApplicationCommandInputType, ApplicationCommandType, MessageModule, ClydeUtils } from "../types";
 import { encodeMessage } from "../swap";
-import { ensureInDMs, confirmAction } from "../utils/ui";
-import { pendingSwaps, cleanupSwap } from "../utils/cleanup";
+import { ApplicationCommandInputType, ApplicationCommandType, ClydeUtils, MessageModule } from "../types";
+import { cleanupSwap, pendingSwaps } from "../utils/cleanup";
+import { confirmAction, ensureInDMs } from "../utils/ui";
 
 const { _sendMessage, deleteMessage } = findByProps("_sendMessage", "deleteMessage") as MessageModule;
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
@@ -30,19 +30,22 @@ export function createSwapCommand() {
 
                 const isConfirmed = await confirmAction(
                     "Initiate Account Swap?",
-                    "This will start the swap process. Your account may be at risk if the other user is not trustworthy."
+                    "This will start the swap process. Your account may be at risk if the other user is not trustworthy.",
                 );
                 if (!isConfirmed) return;
 
                 const currentToken = getToken();
                 if (!currentToken) {
-                    return sendBotMessage(ctx.channel.id, "❌ **Swap Failed**: Unable to retrieve your account token. Please try reloading Discord.");
+                    return sendBotMessage(
+                        ctx.channel.id,
+                        "❌ **Swap Failed**: Unable to retrieve your account token. Please try reloading Discord.",
+                    );
                 }
 
                 const { body: { id: messageId } } = await _sendMessage(ctx.channel.id, {
                     nonce: Math.floor(Date.now() / 1000),
                     content: encodeMessage({ $: "SWAP_REQUEST" }),
-                }, { });
+                }, {});
 
                 const swapData = {
                     iStartedIt: true,
@@ -52,13 +55,16 @@ export function createSwapCommand() {
                         await deleteMessage(ctx.channel.id, messageId).catch(() => {});
                         sendBotMessage(ctx.channel.id, "Swap request timed out after 30 seconds.");
                         cleanupSwap(otherUser.id);
-                    }, 30000)
+                    }, 30000),
                 };
-                
+
                 pendingSwaps.set(otherUser.id, swapData);
             } catch (err) {
                 console.error("Error in swap command:", err);
-                sendBotMessage(ctx.channel.id, `❌ **Swap Command Failed**: ${err.stack ?? err.message ?? 'Unknown error occurred'}.`);
+                sendBotMessage(
+                    ctx.channel.id,
+                    `❌ **Swap Command Failed**: ${err.stack ?? err.message ?? "Unknown error occurred"}.`,
+                );
             }
         },
     });
