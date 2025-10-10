@@ -1,0 +1,123 @@
+import { registerCommand } from "@vendetta/commands";
+import { findByProps, findByStoreName } from "@vendetta/metro";
+import { FluxDispatcher } from "@vendetta/metro/common";
+import { ApplicationCommandInputType, ApplicationCommandOptionType, ApplicationCommandType, ClydeUtils, MessageModule } from "../types";
+import { typedStorage } from "../storage";
+import { encodeMessage } from "../protocol";
+import { ensureInDMs } from "../utils/ui";
+
+const { _sendMessage } = findByProps("_sendMessage", "deleteMessage") as MessageModule;
+const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
+const UserStore = findByStoreName("UserStore");
+
+export function createApplyCommand() {
+    return registerCommand({
+        name: "impersonate-apply",
+        displayName: "impersonate-apply",
+        description: "Apply the buffered profile to a target user.",
+        displayDescription: "Apply the buffered profile to a target user.",
+        type: ApplicationCommandType.CHAT as number,
+        inputType: ApplicationCommandInputType.BUILT_IN_TEXT as number,
+        applicationId: "-1",
+        options: [
+            {
+                name: "target",
+                displayName: "target",
+                description: "The user to apply the profile to (defaults to yourself)",
+                displayDescription: "The user to apply the profile to (defaults to yourself)",
+                type: ApplicationCommandOptionType.USER as number,
+                required: false,
+            },
+            {
+                name: "local",
+                displayName: "local",
+                description: "Apply locally without sending to other user",
+                displayDescription: "Apply locally without sending to other user",
+                type: ApplicationCommandOptionType.BOOLEAN as number,
+                required: false,
+            }
+        ],
+        async execute(args, ctx) {
+            if (!typedStorage.buffer?.user && !typedStorage.buffer?.profile) {
+                return sendBotMessage(ctx.channel.id, "Failed: Buffer is empty. Use /impersonate-copy first.");
+            }
+
+            const currentUser = UserStore.getCurrentUser();
+            if (!currentUser) {
+                return sendBotMessage(ctx.channel.id, "Failed: Could not get current user.");
+            }
+
+            const targetUserId = args[0]?.value?.id || args[0]?.value || currentUser.id;
+            const isLocal = args.find(arg => arg.name === "local")?.value ?? false;
+            const isSelf = targetUserId === currentUser.id;
+            const sourceUsername = typedStorage.buffer.sourceUsername || "Unknown";
+
+            const targetUser = UserStore.getUser(targetUserId) ?? currentUser;
+            if (!targetUser) {
+                return sendBotMessage(ctx.channel.id, "Failed: Could not find target user.");
+            }
+
+            if (isSelf && typedStorage.buffer.user?.id === currentUser.id) {
+                return sendBotMessage(ctx.channel.id, "Failed: Cannot apply your own profile onto yourself.");
+            }
+
+            const applyData = {
+                user: typedStorage.buffer.user,
+                profile: typedStorage.buffer.profile,
+                avatarURL: typedStorage.buffer.avatarURL,
+                avatarSource: typedStorage.buffer.avatarSource,
+            };
+
+            if (isLocal) {
+                typedStorage.replacements[targetUserId] = applyData;
+                
+                // Force UI refresh by emitting a user update event
+                if (FluxDispatcher?.dispatch) {
+                    FluxDispatcher.dispatch({
+                        type: "USER_UPDATE",
+                        user: UserStore.getUser(targetUserId)
+                    });
+                }
+                
+                sendBotMessage(ctx.channel.id, isSelf
+                    ? `Applied ${sourceUsername}'s profile to yourself locally.`
+                    : `Applied ${sourceUsername}'s profile to ${targetUser.username} locally.`);
+                return;
+            }
+
+            const inDM = !ctx.guild && ctx.channel.rawRecipients?.length === 1;
+
+            if (inDM) {
+                const otherUser = ensureInDMs(ctx);
+                if (!otherUser) return;
+
+                await _sendMessage(ctx.channel.id, {
+                    nonce: Date.now(),
+                    content: encodeMessage({ 
+                        $: "COMMIT_PROFILE",
+                        targetUserId,
+                        ...applyData,
+                    }),
+                }, {});
+
+                sendBotMessage(ctx.channel.id, isSelf
+                    ? `Profile request sent to ${otherUser.username} for yourself.`
+                    : `Profile request sent to ${otherUser.username} for ${targetUser.username}.`);
+            } else {
+                typedStorage.replacements[targetUserId] = applyData;
+                
+                // Force UI refresh by emitting a user update event
+                if (FluxDispatcher?.dispatch) {
+                    FluxDispatcher.dispatch({
+                        type: "USER_UPDATE",
+                        user: UserStore.getUser(targetUserId)
+                    });
+                }
+                
+                sendBotMessage(ctx.channel.id, isSelf
+                    ? `Applied ${sourceUsername}'s profile to yourself.`
+                    : `Applied ${sourceUsername}'s profile to ${targetUser.username}.`);
+            }
+        },
+    });
+}
