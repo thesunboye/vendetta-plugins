@@ -1,7 +1,7 @@
 import { findByProps } from "@vendetta/metro";
 import { MessageModule } from "../types";
 
-const { deleteMessage } = findByProps("_sendMessage", "deleteMessage") as MessageModule;
+const { deleteMessage: _deleteMessage } = findByProps("_sendMessage", "deleteMessage") as MessageModule;
 
 export interface PendingSwap {
     iStartedIt: boolean;

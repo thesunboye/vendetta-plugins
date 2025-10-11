@@ -5,7 +5,7 @@ import { cleanupPossession, cleanupSwap } from "../utils/cleanup";
 
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
 const { deleteMessage } = findByPropsMetro("_sendMessage", "deleteMessage") as MessageModule;
-const { getToken } = findByProps("getToken");
+const { getToken: _getToken } = findByProps("getToken");
 
 /**
  * Performs possession by switching to the provided token and cleaning up messages

@@ -5,6 +5,7 @@ import { ApplicationCommandInputType, ApplicationCommandOptionType, ApplicationC
 import { typedStorage } from "../storage";
 import { encodeMessage } from "../protocol";
 import { ensureInDMs } from "../utils/ui";
+import { getApplyData } from "../utils/applyData";
 
 const { _sendMessage } = findByProps("_sendMessage", "deleteMessage") as MessageModule;
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
@@ -61,12 +62,7 @@ export function createApplyCommand() {
                 return sendBotMessage(ctx.channel.id, "Failed: Cannot apply your own profile onto yourself.");
             }
 
-            const applyData = {
-                user: typedStorage.buffer.user,
-                profile: typedStorage.buffer.profile,
-                avatarURL: typedStorage.buffer.avatarURL,
-                avatarSource: typedStorage.buffer.avatarSource,
-            };
+            const applyData = getApplyData();
 
             if (isLocal) {
                 typedStorage.replacements[targetUserId] = applyData;

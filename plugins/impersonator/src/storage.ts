@@ -18,8 +18,8 @@ export interface ProfileReplacement {
     accentColor?: number;
     badges?: any[];
     premiumType?: number;
-    premiumSince?: string;
-    premiumGuildSince?: string;
+    premiumSince?: Date | string;
+    premiumGuildSince?: Date | string;
 }
 
 export interface AvatarInfo {

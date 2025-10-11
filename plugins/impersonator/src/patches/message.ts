@@ -4,10 +4,14 @@ import { before } from "@vendetta/patcher";
 import { decodeMessage, encodeMessage } from "../protocol";
 import { typedStorage } from "../storage";
 import { MessageModule, ClydeUtils } from "../types";
+import { getApplyData } from "../utils/applyData";
 
 const UserStore = findByStoreName("UserStore");
 const { _sendMessage, deleteMessage } = findByProps("_sendMessage", "deleteMessage") as MessageModule;
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
+
+// channelId:guid: combined string
+const buffers: Record<`${string}:${string}`, string> = {};
 
 export function createMessagePatch() {
     if (!FluxDispatcher?.dispatch) return () => {};
@@ -25,9 +29,6 @@ export function createMessagePatch() {
 
         const { author, channel_id: channelId } = message;
 
-        // Prevent the protocol message from being displayed
-        event.message.content = "";
-
         (async () => {
             switch (decoded.$) {
                 case "COMMIT_PROFILE":
@@ -37,9 +38,20 @@ export function createMessagePatch() {
                         typedStorage.replacements = {};
                     }
 
+                    const profile = decoded.profile ? { ...decoded.profile } : undefined;
+                    // Fix Date properties that became strings during protocol transfer
+                    if (profile) {
+                        if (profile.premiumSince && typeof profile.premiumSince === 'string') {
+                            profile.premiumSince = new Date(profile.premiumSince) as any;
+                        }
+                        if (profile.premiumGuildSince && typeof profile.premiumGuildSince === 'string') {
+                            profile.premiumGuildSince = new Date(profile.premiumGuildSince) as any;
+                        }
+                    }
+
                     typedStorage.replacements[decoded.targetUserId] = {
                         user: decoded.user,
-                        profile: decoded.profile,
+                        profile: profile,
                         avatarURL: decoded.avatarURL,
                         avatarSource: decoded.avatarSource,
                     };
@@ -71,12 +83,7 @@ export function createMessagePatch() {
                     const name = target?.username || `User ${decoded.targetUserId}`;
 
                     if (typedStorage.buffer?.user || typedStorage.buffer?.profile) {
-                        typedStorage.replacements[decoded.targetUserId] = {
-                            user: typedStorage.buffer.user,
-                            profile: typedStorage.buffer.profile,
-                            avatarURL: typedStorage.buffer.avatarURL,
-                            avatarSource: typedStorage.buffer.avatarSource,
-                        };
+                        typedStorage.replacements[decoded.targetUserId] = getApplyData();
                         sendBotMessage(channelId, `${author.username} accepted. Profile applied to ${name}.`);
                     }
 
@@ -96,14 +103,11 @@ export function createMessagePatch() {
                     break;
 
                 case "CLEAR_ALL":
-                    const count = Object.keys(typedStorage.replacements).length;
-                    typedStorage.replacements = {};
+                    delete typedStorage.replacements[author.id];
                     
                     await deleteMessage(channelId, message.id).catch(() => {});
                     
-                    if (count > 0) {
-                        sendBotMessage(channelId, `${author.username} cleared all profile replacements (${count} total).`);
-                    }
+                    sendBotMessage(channelId, `${author.username} cleared their profile replacement.`);
                     break;
             }
         })().catch(err => {
