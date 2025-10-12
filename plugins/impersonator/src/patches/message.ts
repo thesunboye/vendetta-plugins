@@ -1,7 +1,7 @@
 import { findByProps, findByStoreName } from "@vendetta/metro";
 import { FluxDispatcher } from "@vendetta/metro/common";
 import { before } from "@vendetta/patcher";
-import { decodeMessage, encodeMessage } from "../protocol";
+import { decodeMessage, encodeMessage, ProtocolMessage } from "../protocol";
 import { setReplacement, deleteReplacement, getReplacement, getBuffer } from "../storage";
 import { MessageModule, ClydeUtils } from "../types";
 import { getApplyData } from "../utils/applyData";
@@ -9,6 +9,39 @@ import { getApplyData } from "../utils/applyData";
 const UserStore = findByStoreName("UserStore");
 const { _sendMessage, deleteMessage } = findByProps("_sendMessage", "deleteMessage") as MessageModule;
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
+
+// Simple in-memory chunk reassembly
+const chunkBuffer: Map<string, Map<number, string>> = new Map();
+
+function assembleChunks(chunkId: string, index: number, total: number, data: string): ProtocolMessage | null {
+    if (!chunkBuffer.has(chunkId)) {
+        chunkBuffer.set(chunkId, new Map());
+    }
+    
+    const chunks = chunkBuffer.get(chunkId)!;
+    chunks.set(index, data);
+    
+    // Check if we have all chunks
+    if (chunks.size === total) {
+        // Reassemble in order
+        let fullJson = '';
+        for (let i = 0; i < total; i++) {
+            fullJson += chunks.get(i) || '';
+        }
+        
+        // Clean up
+        chunkBuffer.delete(chunkId);
+        
+        try {
+            return JSON.parse(fullJson) as ProtocolMessage;
+        } catch {
+            return null;
+        }
+    }
+    
+    return null; // Still waiting for more chunks
+}
+
 
 export function createMessagePatch() {
     if (!FluxDispatcher?.dispatch) return () => {};
@@ -27,90 +60,119 @@ export function createMessagePatch() {
         const { author, channel_id: channelId } = message;
 
         (async () => {
-            switch (decoded.$) {
-                case "COMMIT_PROFILE":
-                    if (!decoded.targetUserId) return;
-
-                    const user = decoded.user ? { ...decoded.user } : undefined;
-                    const profile = decoded.profile ? { ...decoded.profile } : undefined;
-                    // Fix Date properties that became strings during protocol transfer
-                    if (profile) {
-                        if (profile.premiumSince && typeof profile.premiumSince === 'string') {
-                            profile.premiumSince = new Date(profile.premiumSince) as any;
-                        }
-                        if (profile.premiumGuildSince && typeof profile.premiumGuildSince === 'string') {
-                            profile.premiumGuildSince = new Date(profile.premiumGuildSince) as any;
-                        }
-                    }
-
-                    setReplacement(decoded.targetUserId, {
-                        user: user,
-                        profile: profile,
-                        avatarURL: decoded.avatarURL,
-                        avatarSource: decoded.avatarSource,
-                    });
-
-                    const { body: { id: acceptMsgId } } = await _sendMessage(channelId, {
-                        nonce: Date.now(),
-                        content: encodeMessage({
-                            $: "COMMIT_ACCEPT",
-                            targetUserId: decoded.targetUserId,
-                        })
-                    }, {});
-
-                    setTimeout(async () => {
-                        await Promise.allSettled([
-                            deleteMessage(channelId, message.id),
-                            deleteMessage(channelId, acceptMsgId)
-                        ]);
-                    }, 2000);
-
-                    const targetUser = UserStore.getUser(decoded.targetUserId);
-                    const targetName = targetUser?.username || `User ${decoded.targetUserId}`;
-                    sendBotMessage(channelId, `Profile applied to ${targetName}. ${author.username} can also see the changes.`);
-                    break;
-
-                case "COMMIT_ACCEPT":
-                    if (!decoded.targetUserId) return;
-
-                    const target = UserStore.getUser(decoded.targetUserId);
-                    const name = target?.username || `User ${decoded.targetUserId}`;
-
-                    const buffer = getBuffer();
-                    if (buffer?.user || buffer?.profile) {
-                        setReplacement(decoded.targetUserId, getApplyData());
-                        
-                        sendBotMessage(channelId, `${author.username} accepted. Profile applied to ${name}.`);
-                    }
-
-                    await deleteMessage(channelId, message.id).catch(() => {});
-                    break;
-
-                case "CLEAR_USER":
-                    if (!decoded.targetUserId) return;
-
-                    if (getReplacement(decoded.targetUserId)) {
-                        deleteReplacement(decoded.targetUserId);
-                        
-                        const user = UserStore.getUser(decoded.targetUserId);
-                        sendBotMessage(channelId, `${author.username} cleared the profile for ${user?.username || "Unknown User"}.`);
-                    }
-
-                    await deleteMessage(channelId, message.id).catch(() => {});
-                    break;
-
-                case "CLEAR_ALL":
-                    if (getReplacement(author.id)) {
-                        deleteReplacement(author.id);
-                    }
-                    
-                    await deleteMessage(channelId, message.id).catch(() => {});
-                    
-                    sendBotMessage(channelId, `${author.username} cleared their profile replacement.`);
-                    break;
+            // Handle chunks first
+            if (decoded.$ === "CHUNK") {
+                const reassembled = assembleChunks(
+                    decoded.chunkId,
+                    decoded.index,
+                    decoded.total,
+                    decoded.data
+                );
+                
+                if (!reassembled) {
+                    // Still waiting for more chunks
+                    return;
+                }
+                
+                // Process the reassembled message
+                await processProtocolMessage(reassembled, author, channelId, message.id);
+                return;
             }
+            
+            // Process normal messages
+            await processProtocolMessage(decoded, author, channelId, message.id);
         })().catch(err => {
             sendBotMessage(channelId, `Error processing message: ${err?.message || "Unknown error"}`);
         });
     });
 }
+
+async function processProtocolMessage(decoded: ProtocolMessage, author: any, channelId: string, originalMessageId: string) {
+    switch (decoded.$) {
+        case "CHUNK":
+            // Should not happen, chunks are handled before this
+            break;
+
+        case "COMMIT_PROFILE":
+            if (!decoded.targetUserId) return;
+
+            const user = decoded.user ? { ...decoded.user } : undefined;
+            const profile = decoded.profile ? { ...decoded.profile } : undefined;
+            // Fix Date properties that became strings during protocol transfer
+            if (profile) {
+                if (profile.premiumSince && typeof profile.premiumSince === 'string') {
+                    profile.premiumSince = new Date(profile.premiumSince) as any;
+                }
+                if (profile.premiumGuildSince && typeof profile.premiumGuildSince === 'string') {
+                    profile.premiumGuildSince = new Date(profile.premiumGuildSince) as any;
+                }
+            }
+
+            setReplacement(decoded.targetUserId, {
+                user: user,
+                profile: profile,
+                avatarURL: decoded.avatarURL,
+                avatarSource: decoded.avatarSource,
+            });
+
+            const { body: { id: acceptMsgId } } = await _sendMessage(channelId, {
+                nonce: Date.now(),
+                content: encodeMessage({
+                    $: "COMMIT_ACCEPT",
+                    targetUserId: decoded.targetUserId,
+                })
+            }, {});
+
+            setTimeout(async () => {
+                await Promise.allSettled([
+                    deleteMessage(channelId, originalMessageId),
+                    deleteMessage(channelId, acceptMsgId)
+                ]);
+            }, 2000);
+
+            const targetUser = UserStore.getUser(decoded.targetUserId);
+            const targetName = targetUser?.username || `User ${decoded.targetUserId}`;
+            sendBotMessage(channelId, `Profile applied to ${targetName}. ${author.username} can also see the changes.`);
+            break;
+
+        case "COMMIT_ACCEPT":
+            if (!decoded.targetUserId) return;
+
+            const target = UserStore.getUser(decoded.targetUserId);
+            const name = target?.username || `User ${decoded.targetUserId}`;
+
+            const buffer = getBuffer();
+            if (buffer?.user || buffer?.profile) {
+                setReplacement(decoded.targetUserId, getApplyData());
+                
+                sendBotMessage(channelId, `${author.username} accepted. Profile applied to ${name}.`);
+            }
+
+            await deleteMessage(channelId, originalMessageId).catch(() => {});
+            break;
+
+        case "CLEAR_USER":
+            if (!decoded.targetUserId) return;
+
+            if (getReplacement(decoded.targetUserId)) {
+                deleteReplacement(decoded.targetUserId);
+                
+                const user = UserStore.getUser(decoded.targetUserId);
+                sendBotMessage(channelId, `${author.username} cleared the profile for ${user?.username || "Unknown User"}.`);
+            }
+
+            await deleteMessage(channelId, originalMessageId).catch(() => {});
+            break;
+
+        case "CLEAR_ALL":
+            if (getReplacement(author.id)) {
+                deleteReplacement(author.id);
+            }
+            
+            await deleteMessage(channelId, originalMessageId).catch(() => {});
+            
+            sendBotMessage(channelId, `${author.username} cleared their profile replacement.`);
+            break;
+    }
+}
+

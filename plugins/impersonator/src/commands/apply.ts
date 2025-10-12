@@ -2,7 +2,7 @@ import { registerCommand } from "@vendetta/commands";
 import { findByProps, findByStoreName } from "@vendetta/metro";
 import { ApplicationCommandInputType, ApplicationCommandOptionType, ApplicationCommandType, ClydeUtils, MessageModule } from "../types";
 import { getBuffer, setReplacement } from "../storage";
-import { encodeMessage } from "../protocol";
+import { chunkMessage } from "../protocol";
 import { ensureInDMs } from "../utils/ui";
 
 const { _sendMessage, deleteMessage } = findByProps("_sendMessage", "deleteMessage") as MessageModule;
@@ -95,19 +95,27 @@ export function createApplyCommand() {
                 const otherUser = ensureInDMs(ctx);
                 if (!otherUser) return;
 
-                const { body: { id: messageId } } = await _sendMessage(ctx.channel.id, {
-                    nonce: Date.now(),
-                    content: encodeMessage({ 
-                        $: "COMMIT_PROFILE",
-                        targetUserId,
-                        user: applyData.user,
-                        profile: applyData.profile,
-                        avatarURL: applyData.avatarURL,
-                        avatarSource: applyData.avatarSource,
-                    }),
-                }, {});
+                const chunks = chunkMessage({ 
+                    $: "COMMIT_PROFILE",
+                    targetUserId,
+                    user: applyData.user,
+                    profile: applyData.profile,
+                    avatarURL: applyData.avatarURL,
+                    avatarSource: applyData.avatarSource,
+                });
 
-                setTimeout(() => deleteMessage(ctx.channel.id, messageId).catch(() => {}), 12000);
+                const messageIds: string[] = [];
+                for (const chunk of chunks) {
+                    const { body: { id: messageId } } = await _sendMessage(ctx.channel.id, {
+                        nonce: Date.now(),
+                        content: chunk,
+                    }, {});
+                    messageIds.push(messageId);
+                }
+
+                setTimeout(() => {
+                    messageIds.forEach(id => deleteMessage(ctx.channel.id, id).catch(() => {}));
+                }, 12000);
 
                 sendBotMessage(ctx.channel.id, isSelf
                     ? `Profile request sent to ${otherUser.username} for yourself.`

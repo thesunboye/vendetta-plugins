@@ -14,7 +14,13 @@ export type ProtocolMessage =
     | Message<"CLEAR_USER"> & {
         targetUserId: string;
     }
-    | Message<"CLEAR_ALL">;
+    | Message<"CLEAR_ALL">
+    | Message<"CHUNK"> & {
+        chunkId: string;
+        index: number;
+        total: number;
+        data: string;
+    };
 
 export type Message<T extends string> = {
     $: T;
@@ -105,4 +111,42 @@ export function decodeMessage(str: string): ProtocolMessage | null {
     } catch {
         return null;
     }
+}
+
+// Simple chunking: split encoded message into chunks that fit Discord's 2000 char limit
+const MAX_CHUNK_SIZE = 1800; // Leave room for magic prefix and encoding overhead
+
+export function chunkMessage(message: ProtocolMessage): string[] {
+    const encoded = encodeMessage(message);
+    
+    // If it fits in one message, return as-is
+    if (encoded.length <= MAX_CHUNK_SIZE) {
+        return [encoded];
+    }
+    
+    // Generate a unique ID for this chunk set
+    const chunkId = Math.random().toString(36).substring(2, 10);
+    const json = JSON.stringify(message);
+    const chunks: string[] = [];
+    const chunkDataSize = MAX_CHUNK_SIZE - 200; // Reserve space for chunk metadata
+    
+    const totalChunks = Math.ceil(json.length / chunkDataSize);
+    
+    for (let i = 0; i < totalChunks; i++) {
+        const start = i * chunkDataSize;
+        const end = Math.min(start + chunkDataSize, json.length);
+        const chunkData = json.substring(start, end);
+        
+        const chunk: ProtocolMessage = {
+            $: "CHUNK",
+            chunkId,
+            index: i,
+            total: totalChunks,
+            data: chunkData,
+        };
+        
+        chunks.push(encodeMessage(chunk));
+    }
+    
+    return chunks;
 }
