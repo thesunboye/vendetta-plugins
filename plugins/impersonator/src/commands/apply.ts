@@ -4,7 +4,6 @@ import { ApplicationCommandInputType, ApplicationCommandOptionType, ApplicationC
 import { getBuffer, setReplacement } from "../storage";
 import { encodeMessage } from "../protocol";
 import { ensureInDMs } from "../utils/ui";
-import { getApplyData } from "../utils/applyData";
 
 const { _sendMessage, deleteMessage } = findByProps("_sendMessage", "deleteMessage") as MessageModule;
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
@@ -62,7 +61,24 @@ export function createApplyCommand() {
                 return sendBotMessage(ctx.channel.id, "Failed: Cannot apply your own profile onto yourself.");
             }
 
-            const applyData = getApplyData();
+            const user = buffer.user ? { ...buffer.user } : undefined;
+            const profile = buffer.profile ? { ...buffer.profile } : undefined;
+            // Fix Date properties that became strings during protocol transfer
+            if (profile) {
+                if (profile.premiumSince && typeof profile.premiumSince === 'string') {
+                    profile.premiumSince = new Date(profile.premiumSince) as any;
+                }
+                if (profile.premiumGuildSince && typeof profile.premiumGuildSince === 'string') {
+                    profile.premiumGuildSince = new Date(profile.premiumGuildSince) as any;
+                }
+            }
+
+            const applyData = {
+                user: user,
+                profile: profile,
+                avatarURL: buffer.avatarURL,
+                avatarSource: buffer.avatarSource,
+            };
 
             if (isLocal) {
                 setReplacement(targetUserId, applyData);
@@ -84,7 +100,10 @@ export function createApplyCommand() {
                     content: encodeMessage({ 
                         $: "COMMIT_PROFILE",
                         targetUserId,
-                        ...applyData,
+                        user: applyData.user,
+                        profile: applyData.profile,
+                        avatarURL: applyData.avatarURL,
+                        avatarSource: applyData.avatarSource,
                     }),
                 }, {});
 
