@@ -95,10 +95,10 @@ function decompress(str: string): string {
             // Back-reference
             const dist = str.charCodeAt(i + 1);
             const len = str.charCodeAt(i + 2);
-            const start = output.length - dist;
             
             for (let j = 0; j < len; j++) {
-                output.push(output[start + j]);
+                // Recalculate position for each character to handle overlapping patterns
+                output.push(output[output.length - dist]);
             }
             i += 3;
         } else {
