@@ -1,7 +1,7 @@
 import { registerCommand } from "@vendetta/commands";
 import { findByProps, findByStoreName } from "@vendetta/metro";
 import { ApplicationCommandInputType, ApplicationCommandOptionType, ApplicationCommandType, ClydeUtils } from "../types";
-import { typedStorage } from "../storage";
+import { setBuffer } from "../storage";
 
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
 const UserStore = findByStoreName("UserStore");
@@ -40,14 +40,16 @@ export function createCopyCommand() {
                 return sendBotMessage(ctx.channel.id, "Failed: Could not find user.");
             }
 
-            typedStorage.buffer = {
+            const profile = UserProfileStore.getUserProfile(userId);
+
+            setBuffer({
                 user: user,
-                profile: UserProfileStore.getUserProfile(userId),
+                profile: profile,
                 avatarURL: avatarStuff.getUserAvatarURL(user),
                 avatarSource: avatarStuff.getUserAvatarSource(user),
                 sourceUsername: user.username,
                 timestamp: Date.now(),
-            };
+            });
 
             const isSelf = userId === currentUser?.id;
             sendBotMessage(ctx.channel.id, isSelf 

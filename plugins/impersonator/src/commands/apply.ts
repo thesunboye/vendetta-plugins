@@ -1,12 +1,12 @@
 import { registerCommand } from "@vendetta/commands";
 import { findByProps, findByStoreName } from "@vendetta/metro";
 import { ApplicationCommandInputType, ApplicationCommandOptionType, ApplicationCommandType, ClydeUtils, MessageModule } from "../types";
-import { typedStorage, setReplacement, forceUserRefresh } from "../storage";
+import { typedStorage, setReplacement } from "../storage";
 import { encodeMessage } from "../protocol";
 import { ensureInDMs } from "../utils/ui";
 import { getApplyData } from "../utils/applyData";
 
-const { _sendMessage } = findByProps("_sendMessage", "deleteMessage") as MessageModule;
+const { _sendMessage, deleteMessage } = findByProps("_sendMessage", "deleteMessage") as MessageModule;
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
 const UserStore = findByStoreName("UserStore");
 
@@ -66,9 +66,6 @@ export function createApplyCommand() {
             if (isLocal) {
                 setReplacement(targetUserId, applyData);
                 
-                // Force complete UI refresh
-                forceUserRefresh(targetUserId);
-                
                 sendBotMessage(ctx.channel.id, isSelf
                     ? `Applied ${sourceUsername}'s profile to yourself locally.`
                     : `Applied ${sourceUsername}'s profile to ${targetUser.username} locally.`);
@@ -81,7 +78,7 @@ export function createApplyCommand() {
                 const otherUser = ensureInDMs(ctx);
                 if (!otherUser) return;
 
-                await _sendMessage(ctx.channel.id, {
+                const { body: { id: messageId } } = await _sendMessage(ctx.channel.id, {
                     nonce: Date.now(),
                     content: encodeMessage({ 
                         $: "COMMIT_PROFILE",
@@ -90,14 +87,13 @@ export function createApplyCommand() {
                     }),
                 }, {});
 
+                setTimeout(() => deleteMessage(ctx.channel.id, messageId).catch(() => {}), 12000);
+
                 sendBotMessage(ctx.channel.id, isSelf
                     ? `Profile request sent to ${otherUser.username} for yourself.`
                     : `Profile request sent to ${otherUser.username} for ${targetUser.username}.`);
             } else {
                 setReplacement(targetUserId, applyData);
-                
-                // Force complete UI refresh
-                forceUserRefresh(targetUserId);
                 
                 sendBotMessage(ctx.channel.id, isSelf
                     ? `Applied ${sourceUsername}'s profile to yourself.`

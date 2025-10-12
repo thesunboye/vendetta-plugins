@@ -1,4 +1,4 @@
-import { typedStorage, UserReplacementData } from "../storage";
+import { typedStorage, type UserReplacementData } from "../storage";
 
 /**
  * Fixes up profile data after deserialization from JSON storage.
@@ -9,7 +9,7 @@ export function getApplyData(): UserReplacementData {
     if (!buffer) return {};
 
     const applyData: UserReplacementData = {
-        user: buffer.user,
+        user: buffer.user ? { ...buffer.user } : undefined,
         profile: buffer.profile ? { ...buffer.profile } : undefined,
         avatarURL: buffer.avatarURL,
         avatarSource: buffer.avatarSource,

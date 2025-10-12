@@ -1,7 +1,7 @@
 import { registerCommand } from "@vendetta/commands";
 import { findByProps, findByStoreName } from "@vendetta/metro";
 import { ApplicationCommandInputType, ApplicationCommandOptionType, ApplicationCommandType, ClydeUtils, MessageModule } from "../types";
-import { typedStorage, deleteReplacement, clearAllReplacements, forceUserRefresh } from "../storage";
+import { typedStorage, deleteReplacement, clearAllReplacements } from "../storage";
 import { encodeMessage } from "../protocol";
 
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
@@ -60,9 +60,6 @@ export function createClearUserCommand() {
 
             deleteReplacement(userId);
 
-            // Force complete UI refresh
-            forceUserRefresh(userId);
-
             if (isLocal || isSelf) {
                 sendBotMessage(ctx.channel.id, isSelf
                     ? "Cleared your profile replacement."
@@ -114,11 +111,7 @@ export function createClearAllCommand() {
 
             const isLocal = args[0]?.value === true;
 
-            const userIds = Object.keys(typedStorage.replacements || {});
             clearAllReplacements();
-
-            // Force complete UI refresh for all affected users
-            userIds.forEach(userId => forceUserRefresh(userId));
 
             if (isLocal) {
                 sendBotMessage(ctx.channel.id, `Cleared ${count} profile replacement(s) locally.`);

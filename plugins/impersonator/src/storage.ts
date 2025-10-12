@@ -1,6 +1,4 @@
 import { storage } from "@vendetta/plugin";
-import { findByStoreName } from "@vendetta/metro";
-import { FluxDispatcher } from "@vendetta/metro/common";
 
 export interface UserReplacement {
     id: string;
@@ -63,11 +61,30 @@ export function initStorage() {
 /**
  * Helper to update a replacement and ensure storage is synced.
  * Vendetta's storage system requires reassignment to detect changes.
+ * Also deep-clones nested objects to avoid mutation issues.
  */
 export function setReplacement(userId: string, data: UserReplacementData) {
+    // Deep clone the data to avoid mutation issues and ensure proper JSON serialization
+    const clonedData: UserReplacementData = {
+        user: data.user ? { ...data.user } : undefined,
+        profile: data.profile ? { ...data.profile } : undefined,
+        avatarURL: data.avatarURL,
+        avatarSource: data.avatarSource,
+    };
+    
+    // Fix Date properties that became strings during JSON serialization
+    if (clonedData.profile) {
+        if (clonedData.profile.premiumSince) {
+            clonedData.profile.premiumSince = new Date();
+        }
+        if (clonedData.profile.premiumGuildSince) {
+            clonedData.profile.premiumGuildSince = new Date();
+        }
+    }
+    
     typedStorage.replacements = {
         ...typedStorage.replacements,
-        [userId]: data
+        [userId]: clonedData
     };
 }
 
@@ -87,44 +104,21 @@ export function clearAllReplacements() {
 }
 
 /**
- * Force Discord to refresh all cached user data for a specific user.
- * This ensures the UI updates immediately after changing replacements.
+ * Helper to set buffer data and ensure storage is synced.
+ * Properly handles object reassignment for Vendetta's storage system.
  */
-export function forceUserRefresh(userId: string) {
-    if (!FluxDispatcher?.dispatch) return;
+export function setBuffer(bufferData: ImpersonatorStorage["buffer"]) {
+    const clonedBuffer = { ...bufferData };
     
-    const UserStore = findByStoreName("UserStore");
-    const user = UserStore?.getUser?.(userId);
-    
-    if (!user) return;
-    
-    // Dispatch multiple events to force complete UI refresh
-    // USER_UPDATE: Updates username, avatar, discriminator, etc.
-    FluxDispatcher.dispatch({
-        type: "USER_UPDATE",
-        user: { ...user }
-    });
-    
-    // USER_PROFILE_UPDATE: Forces profile modal to refresh
-    FluxDispatcher.dispatch({
-        type: "USER_PROFILE_UPDATE",
-        user: { ...user },
-        guildId: undefined
-    });
-    
-    // PRESENCE_UPDATE: Forces presence indicators to refresh
-    FluxDispatcher.dispatch({
-        type: "PRESENCE_UPDATE",
-        user: { ...user }
-    });
-    
-    // Force a small delay then another USER_UPDATE to ensure persistence
-    setTimeout(() => {
-        if (FluxDispatcher?.dispatch) {
-            FluxDispatcher.dispatch({
-                type: "USER_UPDATE",
-                user: { ...user }
-            });
+    // Fix Date properties that became strings during JSON serialization
+    if (clonedBuffer?.profile) {
+        if (clonedBuffer.profile.premiumSince) {
+            clonedBuffer.profile.premiumSince = new Date();
         }
-    }, 100);
+        if (clonedBuffer.profile.premiumGuildSince) {
+            clonedBuffer.profile.premiumGuildSince = new Date();
+        }
+    }
+    
+    typedStorage.buffer = clonedBuffer;
 }

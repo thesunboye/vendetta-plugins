@@ -1,7 +1,7 @@
 import { registerCommand } from "@vendetta/commands";
 import { findByProps } from "@vendetta/metro";
 import { ApplicationCommandInputType, ApplicationCommandType, ClydeUtils } from "../types";
-import { typedStorage } from "../storage";
+import { typedStorage, setBuffer } from "../storage";
 
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
 
@@ -58,7 +58,7 @@ export function createBufferClearCommand() {
                 return sendBotMessage(ctx.channel.id, "Buffer is already empty.");
             }
 
-            typedStorage.buffer = {};
+            setBuffer({});
             sendBotMessage(ctx.channel.id, "Buffer cleared.");
         },
     });
