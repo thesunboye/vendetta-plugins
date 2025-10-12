@@ -50,26 +50,8 @@ export const createUserPatches = () => {
             instead("getUserProfile", UserProfileStore, (args, ogFunc) => {
                 if (typeof ogFunc !== "function" || !args?.[0]) return ogFunc?.(...args) || null;
 
-                const userId = args[0];
-                const replacement = typedStorage.replacements?.[userId]?.profile;
-                
-                if (!replacement) {
-                    return ogFunc(...args);
-                }
-
-                // Get the original profile first
-                const originalProfile = ogFunc(...args);
-                
-                // If there's no original profile, return just the replacement
-                if (!originalProfile || typeof originalProfile !== "object") {
-                    return { ...replacement };
-                }
-
-                // Merge replacement ON TOP of original profile to preserve all data
-                return {
-                    ...originalProfile,
-                    ...replacement
-                };
+                const replacement = typedStorage.replacements?.[args[0]]?.profile;
+                return replacement ? { ...replacement } : ogFunc(...args);
             })
         );
     }
