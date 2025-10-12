@@ -1,10 +1,11 @@
 import { findByProps } from "@vendetta/metro";
-import { instead } from "@vendetta/patcher";
+import { before, instead } from "@vendetta/patcher";
 import { typedStorage } from "../storage";
 
 const UserStore = findByProps("getUser");
 const UserProfileStore = findByProps("getUserProfile");
 const avatarStuff = findByProps("getUserAvatarURL", "getUserAvatarSource");
+const SnowflakeUtils = findByProps("extractTimestamp");
 
 export const createUserPatches = () => {
     const patches = [];
@@ -49,8 +50,26 @@ export const createUserPatches = () => {
             instead("getUserProfile", UserProfileStore, (args, ogFunc) => {
                 if (typeof ogFunc !== "function" || !args?.[0]) return ogFunc?.(...args) || null;
 
-                const replacement = typedStorage.replacements?.[args[0]]?.profile;
-                return replacement ? { ...replacement } : ogFunc(...args);
+                const userId = args[0];
+                const replacement = typedStorage.replacements?.[userId]?.profile;
+                
+                if (!replacement) {
+                    return ogFunc(...args);
+                }
+
+                // Get the original profile first
+                const originalProfile = ogFunc(...args);
+                
+                // If there's no original profile, return just the replacement
+                if (!originalProfile || typeof originalProfile !== "object") {
+                    return { ...replacement };
+                }
+
+                // Merge replacement ON TOP of original profile to preserve all data
+                return {
+                    ...originalProfile,
+                    ...replacement
+                };
             })
         );
     }
@@ -83,6 +102,16 @@ export const createUserPatches = () => {
                 return ogFunc(...args);
             })
         );
+    }
+
+    if (SnowflakeUtils?.extractTimestamp) {
+        patches.push(before("extractTimestamp", SnowflakeUtils, (args) => {
+            const replacement = typedStorage.replacements?.[args[0]]?.user;
+
+            if (replacement) args[0] = replacement.id;
+
+            return args;
+        }));
     }
 
     return patches;

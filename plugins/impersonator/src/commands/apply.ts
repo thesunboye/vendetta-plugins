@@ -1,8 +1,7 @@
 import { registerCommand } from "@vendetta/commands";
 import { findByProps, findByStoreName } from "@vendetta/metro";
-import { FluxDispatcher } from "@vendetta/metro/common";
 import { ApplicationCommandInputType, ApplicationCommandOptionType, ApplicationCommandType, ClydeUtils, MessageModule } from "../types";
-import { typedStorage } from "../storage";
+import { typedStorage, setReplacement, forceUserRefresh } from "../storage";
 import { encodeMessage } from "../protocol";
 import { ensureInDMs } from "../utils/ui";
 import { getApplyData } from "../utils/applyData";
@@ -65,15 +64,10 @@ export function createApplyCommand() {
             const applyData = getApplyData();
 
             if (isLocal) {
-                typedStorage.replacements[targetUserId] = applyData;
+                setReplacement(targetUserId, applyData);
                 
-                // Force UI refresh by emitting a user update event
-                if (FluxDispatcher?.dispatch) {
-                    FluxDispatcher.dispatch({
-                        type: "USER_UPDATE",
-                        user: UserStore.getUser(targetUserId)
-                    });
-                }
+                // Force complete UI refresh
+                forceUserRefresh(targetUserId);
                 
                 sendBotMessage(ctx.channel.id, isSelf
                     ? `Applied ${sourceUsername}'s profile to yourself locally.`
@@ -100,15 +94,10 @@ export function createApplyCommand() {
                     ? `Profile request sent to ${otherUser.username} for yourself.`
                     : `Profile request sent to ${otherUser.username} for ${targetUser.username}.`);
             } else {
-                typedStorage.replacements[targetUserId] = applyData;
+                setReplacement(targetUserId, applyData);
                 
-                // Force UI refresh by emitting a user update event
-                if (FluxDispatcher?.dispatch) {
-                    FluxDispatcher.dispatch({
-                        type: "USER_UPDATE",
-                        user: UserStore.getUser(targetUserId)
-                    });
-                }
+                // Force complete UI refresh
+                forceUserRefresh(targetUserId);
                 
                 sendBotMessage(ctx.channel.id, isSelf
                     ? `Applied ${sourceUsername}'s profile to yourself.`

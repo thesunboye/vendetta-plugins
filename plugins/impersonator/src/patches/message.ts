@@ -2,16 +2,13 @@ import { findByProps, findByStoreName } from "@vendetta/metro";
 import { FluxDispatcher } from "@vendetta/metro/common";
 import { before } from "@vendetta/patcher";
 import { decodeMessage, encodeMessage } from "../protocol";
-import { typedStorage } from "../storage";
+import { typedStorage, setReplacement, deleteReplacement, forceUserRefresh } from "../storage";
 import { MessageModule, ClydeUtils } from "../types";
 import { getApplyData } from "../utils/applyData";
 
 const UserStore = findByStoreName("UserStore");
 const { _sendMessage, deleteMessage } = findByProps("_sendMessage", "deleteMessage") as MessageModule;
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
-
-// channelId:guid: combined string
-const buffers: Record<`${string}:${string}`, string> = {};
 
 export function createMessagePatch() {
     if (!FluxDispatcher?.dispatch) return () => {};
@@ -49,12 +46,15 @@ export function createMessagePatch() {
                         }
                     }
 
-                    typedStorage.replacements[decoded.targetUserId] = {
+                    setReplacement(decoded.targetUserId, {
                         user: decoded.user,
                         profile: profile,
                         avatarURL: decoded.avatarURL,
                         avatarSource: decoded.avatarSource,
-                    };
+                    });
+
+                    // Force complete UI refresh
+                    forceUserRefresh(decoded.targetUserId);
 
                     const { body: { id: acceptMsgId } } = await _sendMessage(channelId, {
                         nonce: Date.now(),
@@ -83,7 +83,11 @@ export function createMessagePatch() {
                     const name = target?.username || `User ${decoded.targetUserId}`;
 
                     if (typedStorage.buffer?.user || typedStorage.buffer?.profile) {
-                        typedStorage.replacements[decoded.targetUserId] = getApplyData();
+                        setReplacement(decoded.targetUserId, getApplyData());
+                        
+                        // Force complete UI refresh
+                        forceUserRefresh(decoded.targetUserId);
+                        
                         sendBotMessage(channelId, `${author.username} accepted. Profile applied to ${name}.`);
                     }
 
@@ -94,7 +98,11 @@ export function createMessagePatch() {
                     if (!decoded.targetUserId) return;
 
                     if (typedStorage.replacements[decoded.targetUserId]) {
-                        delete typedStorage.replacements[decoded.targetUserId];
+                        deleteReplacement(decoded.targetUserId);
+                        
+                        // Force complete UI refresh
+                        forceUserRefresh(decoded.targetUserId);
+                        
                         const user = UserStore.getUser(decoded.targetUserId);
                         sendBotMessage(channelId, `${author.username} cleared the profile for ${user?.username || "Unknown User"}.`);
                     }
@@ -103,7 +111,12 @@ export function createMessagePatch() {
                     break;
 
                 case "CLEAR_ALL":
-                    delete typedStorage.replacements[author.id];
+                    if (typedStorage.replacements[author.id]) {
+                        deleteReplacement(author.id);
+                        
+                        // Force complete UI refresh
+                        forceUserRefresh(author.id);
+                    }
                     
                     await deleteMessage(channelId, message.id).catch(() => {});
                     
