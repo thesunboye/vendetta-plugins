@@ -1,11 +1,11 @@
-import { typedStorage, type UserReplacementData } from "../storage";
+import { getBuffer, type UserReplacementData } from "../storage";
 
 /**
  * Fixes up profile data after deserialization from JSON storage.
  * Date objects become strings in JSON, so we need to convert them back.
  */
 export function getApplyData(): UserReplacementData {
-    const buffer = typedStorage.buffer;
+    const buffer = getBuffer();
     if (!buffer) return {};
 
     const applyData: UserReplacementData = {

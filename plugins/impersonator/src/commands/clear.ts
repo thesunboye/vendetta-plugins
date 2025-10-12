@@ -1,7 +1,7 @@
 import { registerCommand } from "@vendetta/commands";
 import { findByProps, findByStoreName } from "@vendetta/metro";
 import { ApplicationCommandInputType, ApplicationCommandOptionType, ApplicationCommandType, ClydeUtils, MessageModule } from "../types";
-import { typedStorage, deleteReplacement, clearAllReplacements } from "../storage";
+import { getReplacement, deleteReplacement, clearAllReplacements, getAllReplacements } from "../storage";
 import { encodeMessage } from "../protocol";
 
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
@@ -48,7 +48,7 @@ export function createClearUserCommand() {
                 return sendBotMessage(ctx.channel.id, "Failed: Could not find user.");
             }
 
-            if (!typedStorage.replacements[userId]) {
+            if (!getReplacement(userId)) {
                 const isSelf = userId === currentUser?.id;
                 return sendBotMessage(ctx.channel.id, isSelf 
                     ? "No active profile replacement found for yourself."
@@ -103,7 +103,7 @@ export function createClearAllCommand() {
             }
         ],
         async execute(args, ctx) {
-            const count = Object.keys(typedStorage.replacements).length;
+            const count = Object.keys(getAllReplacements()).length;
             
             if (count === 0) {
                 return sendBotMessage(ctx.channel.id, "No profile replacements to clear.");

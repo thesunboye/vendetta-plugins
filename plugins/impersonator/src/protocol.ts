@@ -24,34 +24,8 @@ const MAGIC = "🦝";
 
 // Aggressive LZ77-style compression
 function compress(str: string): string {
-    // First pass: dictionary compression for common patterns
-    const dict: [string, string][] = [
-        ['targetUserId', '\x01'],
-        ['avatarSource', '\x02'],
-        ['avatarURL', '\x03'],
-        ['profile', '\x04'],
-        ['user', '\x05'],
-        ['COMMIT_PROFILE', '\x06'],
-        ['COMMIT_ACCEPT', '\x07'],
-        ['CLEAR_USER', '\x08'],
-        ['CLEAR_ALL', '\x09'],
-        ['"$":', '\x0A'],
-        ['":"', '\x0B'],
-        ['","', '\x0C'],
-        ['":', '\x0D'],
-        [',"', '\x0E'],
-        ['{"', '\x0F'],
-        ['"}', '\x10'],
-        ['":{"', '\x11'],
-        ['},"', '\x12'],
-    ];
-    
-    let result = str;
-    for (const [key, val] of dict) {
-        result = result.split(key).join(val);
-    }
-    
-    // Second pass: LZ77-style back-reference compression
+    // LZ77-style back-reference compression
+    const result = str;
     const output: string[] = [];
     let i = 0;
     
@@ -107,35 +81,7 @@ function decompress(str: string): string {
         }
     }
     
-    let result = output.join('');
-    
-    // Second pass: expand dictionary
-    const dict: [string, string][] = [
-        ['\x01', 'targetUserId'],
-        ['\x02', 'avatarSource'],
-        ['\x03', 'avatarURL'],
-        ['\x04', 'profile'],
-        ['\x05', 'user'],
-        ['\x06', 'COMMIT_PROFILE'],
-        ['\x07', 'COMMIT_ACCEPT'],
-        ['\x08', 'CLEAR_USER'],
-        ['\x09', 'CLEAR_ALL'],
-        ['\x0A', '"$":'],
-        ['\x0B', '":"'],
-        ['\x0C', '","'],
-        ['\x0D', '":'],
-        ['\x0E', ',"'],
-        ['\x0F', '{"'],
-        ['\x10', '"}'],
-        ['\x11', '":{"'],
-        ['\x12', '},"'],
-    ];
-    
-    for (const [key, val] of dict) {
-        result = result.split(key).join(val);
-    }
-    
-    return result;
+    return output.join('');
 }
 
 export function encodeMessage(message: ProtocolMessage): string {

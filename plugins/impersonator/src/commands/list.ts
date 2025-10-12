@@ -1,7 +1,7 @@
 import { registerCommand } from "@vendetta/commands";
 import { findByProps, findByStoreName } from "@vendetta/metro";
 import { ApplicationCommandInputType, ApplicationCommandType, ClydeUtils } from "../types";
-import { typedStorage } from "../storage";
+import { getAllReplacements } from "../storage";
 
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
 const UserStore = findByStoreName("UserStore");
@@ -17,7 +17,7 @@ export function createListCommand() {
         applicationId: "-1",
         options: [],
         async execute(args, ctx) {
-            const replacements = typedStorage.replacements;
+            const replacements = getAllReplacements();
             const userIds = Object.keys(replacements);
 
             if (userIds.length === 0) {

@@ -2,7 +2,7 @@ import { findByProps, findByStoreName } from "@vendetta/metro";
 import { FluxDispatcher } from "@vendetta/metro/common";
 import { before } from "@vendetta/patcher";
 import { decodeMessage, encodeMessage } from "../protocol";
-import { typedStorage, setReplacement, deleteReplacement } from "../storage";
+import { setReplacement, deleteReplacement, getReplacement, getBuffer } from "../storage";
 import { MessageModule, ClydeUtils } from "../types";
 import { getApplyData } from "../utils/applyData";
 
@@ -30,10 +30,6 @@ export function createMessagePatch() {
             switch (decoded.$) {
                 case "COMMIT_PROFILE":
                     if (!decoded.targetUserId) return;
-
-                    if (!typedStorage.replacements) {
-                        typedStorage.replacements = {};
-                    }
 
                     const user = decoded.user ? { ...decoded.user } : undefined;
                     const profile = decoded.profile ? { ...decoded.profile } : undefined;
@@ -80,7 +76,8 @@ export function createMessagePatch() {
                     const target = UserStore.getUser(decoded.targetUserId);
                     const name = target?.username || `User ${decoded.targetUserId}`;
 
-                    if (typedStorage.buffer?.user || typedStorage.buffer?.profile) {
+                    const buffer = getBuffer();
+                    if (buffer?.user || buffer?.profile) {
                         setReplacement(decoded.targetUserId, getApplyData());
                         
                         sendBotMessage(channelId, `${author.username} accepted. Profile applied to ${name}.`);
@@ -92,7 +89,7 @@ export function createMessagePatch() {
                 case "CLEAR_USER":
                     if (!decoded.targetUserId) return;
 
-                    if (typedStorage.replacements[decoded.targetUserId]) {
+                    if (getReplacement(decoded.targetUserId)) {
                         deleteReplacement(decoded.targetUserId);
                         
                         const user = UserStore.getUser(decoded.targetUserId);
@@ -103,7 +100,7 @@ export function createMessagePatch() {
                     break;
 
                 case "CLEAR_ALL":
-                    if (typedStorage.replacements[author.id]) {
+                    if (getReplacement(author.id)) {
                         deleteReplacement(author.id);
                     }
                     

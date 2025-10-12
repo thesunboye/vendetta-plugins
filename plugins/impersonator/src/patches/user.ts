@@ -1,6 +1,6 @@
 import { findByProps } from "@vendetta/metro";
 import { before, instead } from "@vendetta/patcher";
-import { typedStorage } from "../storage";
+import { getReplacement } from "../storage";
 
 const UserStore = findByProps("getUser");
 const UserProfileStore = findByProps("getUserProfile");
@@ -19,7 +19,8 @@ export const createUserPatches = () => {
                     return result;
                 }
 
-                const replacement = typedStorage.replacements[result.id]?.user;
+                const replacementData = getReplacement(result.id);
+                const replacement = replacementData?.user;
 
                 if (replacement) {
                     for (const [k, v] of Object.entries(replacement)) {
@@ -50,7 +51,8 @@ export const createUserPatches = () => {
             instead("getUserProfile", UserProfileStore, (args, ogFunc) => {
                 if (typeof ogFunc !== "function" || !args?.[0]) return ogFunc?.(...args) || null;
 
-                const replacement = typedStorage.replacements?.[args[0]]?.profile;
+                const replacementData = getReplacement(args[0]);
+                const replacement = replacementData?.profile;
                 return replacement ? { ...replacement } : ogFunc(...args);
             })
         );
@@ -63,7 +65,8 @@ export const createUserPatches = () => {
                 
                 const userId = args?.[0]?.id;
                 if (userId) {
-                    const url = typedStorage.replacements?.[userId]?.avatarURL;
+                    const replacementData = getReplacement(userId);
+                    const url = replacementData?.avatarURL;
                     if (url) return url;
                 }
                 return ogFunc(...args);
@@ -78,7 +81,8 @@ export const createUserPatches = () => {
                 
                 const userId = args?.[0]?.id;
                 if (userId) {
-                    const source = typedStorage.replacements?.[userId]?.avatarSource;
+                    const replacementData = getReplacement(userId);
+                    const source = replacementData?.avatarSource;
                     if (source) return source;
                 }
                 return ogFunc(...args);
@@ -88,7 +92,8 @@ export const createUserPatches = () => {
 
     if (SnowflakeUtils?.extractTimestamp) {
         patches.push(before("extractTimestamp", SnowflakeUtils, (args) => {
-            const replacement = typedStorage.replacements?.[args[0]]?.user;
+            const replacementData = getReplacement(args[0]);
+            const replacement = replacementData?.user;
 
             if (replacement) args[0] = replacement.id;
 

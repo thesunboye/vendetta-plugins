@@ -1,7 +1,7 @@
 import { registerCommand } from "@vendetta/commands";
 import { findByProps } from "@vendetta/metro";
 import { ApplicationCommandInputType, ApplicationCommandType, ClydeUtils } from "../types";
-import { typedStorage, setBuffer } from "../storage";
+import { getBuffer, setBuffer } from "../storage";
 
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
 
@@ -16,19 +16,20 @@ export function createBufferInfoCommand() {
         applicationId: "-1",
         options: [],
         async execute(args, ctx) {
-            if (!typedStorage.buffer?.user && !typedStorage.buffer?.profile) {
+            const buffer = getBuffer();
+            if (!buffer?.user && !buffer?.profile) {
                 return sendBotMessage(ctx.channel.id, "Buffer is empty.");
             }
 
-            const username = typedStorage.buffer.sourceUsername || "Unknown";
-            const timestamp = typedStorage.buffer.timestamp;
+            const username = buffer.sourceUsername || "Unknown";
+            const timestamp = buffer.timestamp;
             const timeAgo = timestamp 
                 ? `${Math.floor((Date.now() - timestamp) / 1000 / 60)} minutes ago`
                 : "Unknown time";
 
-            const hasUser = !!typedStorage.buffer.user;
-            const hasProfile = !!typedStorage.buffer.profile;
-            const hasAvatar = !!(typedStorage.buffer.avatarURL || typedStorage.buffer.avatarSource);
+            const hasUser = !!buffer.user;
+            const hasProfile = !!buffer.profile;
+            const hasAvatar = !!(buffer.avatarURL || buffer.avatarSource);
 
             let info = `Buffer Information\n`;
             info += `Source: ${username}\n`;
@@ -54,7 +55,8 @@ export function createBufferClearCommand() {
         applicationId: "-1",
         options: [],
         async execute(args, ctx) {
-            if (!typedStorage.buffer?.user && !typedStorage.buffer?.profile) {
+            const buffer = getBuffer();
+            if (!buffer?.user && !buffer?.profile) {
                 return sendBotMessage(ctx.channel.id, "Buffer is already empty.");
             }
 

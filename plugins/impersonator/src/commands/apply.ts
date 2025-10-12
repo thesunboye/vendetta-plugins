@@ -1,7 +1,7 @@
 import { registerCommand } from "@vendetta/commands";
 import { findByProps, findByStoreName } from "@vendetta/metro";
 import { ApplicationCommandInputType, ApplicationCommandOptionType, ApplicationCommandType, ClydeUtils, MessageModule } from "../types";
-import { typedStorage, setReplacement } from "../storage";
+import { getBuffer, setReplacement } from "../storage";
 import { encodeMessage } from "../protocol";
 import { ensureInDMs } from "../utils/ui";
 import { getApplyData } from "../utils/applyData";
@@ -38,7 +38,8 @@ export function createApplyCommand() {
             }
         ],
         async execute(args, ctx) {
-            if (!typedStorage.buffer?.user && !typedStorage.buffer?.profile) {
+            const buffer = getBuffer();
+            if (!buffer?.user && !buffer?.profile) {
                 return sendBotMessage(ctx.channel.id, "Failed: Buffer is empty. Use /impersonate-copy first.");
             }
 
@@ -50,14 +51,14 @@ export function createApplyCommand() {
             const targetUserId = args[0]?.value?.id || args[0]?.value || currentUser.id;
             const isLocal = args.find(arg => arg.name === "local")?.value ?? false;
             const isSelf = targetUserId === currentUser.id;
-            const sourceUsername = typedStorage.buffer.sourceUsername || "Unknown";
+            const sourceUsername = buffer.sourceUsername || "Unknown";
 
             const targetUser = UserStore.getUser(targetUserId) ?? currentUser;
             if (!targetUser) {
                 return sendBotMessage(ctx.channel.id, "Failed: Could not find target user.");
             }
 
-            if (isSelf && typedStorage.buffer.user?.id === currentUser.id) {
+            if (isSelf && buffer.user?.id === currentUser.id) {
                 return sendBotMessage(ctx.channel.id, "Failed: Cannot apply your own profile onto yourself.");
             }
 

@@ -1,4 +1,5 @@
 import { storage } from "@vendetta/plugin";
+import { encodeMessage, decodeMessage } from "./protocol";
 
 export interface UserReplacement {
     id: string;
@@ -35,57 +36,100 @@ export interface UserReplacementData {
     avatarSource?: any;
 }
 
+export interface BufferData {
+    user?: any;
+    profile?: any;
+    avatarURL?: string;
+    avatarSource?: any;
+    sourceUsername?: string;
+    timestamp?: number;
+}
+
 export interface ImpersonatorStorage {
-    replacements: Record<string, UserReplacementData>;
-    buffer?: {
-        user?: any;
-        profile?: any;
-        avatarURL?: string;
-        avatarSource?: any;
-        sourceUsername?: string;
-        timestamp?: number;
-    };
+    // Store as encoded protocol messages for compression and consistency
+    replacements: Record<string, string>;
+    // Store buffer as encoded protocol message as well
+    buffer?: string;
 }
 
 export const typedStorage = storage as unknown as ImpersonatorStorage;
 
 export function initStorage() {
+    // Initialize replacements if missing
     if (!typedStorage.replacements) {
         typedStorage.replacements = {};
     }
-    if (!typedStorage.buffer) {
-        typedStorage.buffer = {};
+    
+    // Check if replacements contain old object-based format and reset if needed
+    for (const [_userId, value] of Object.entries(typedStorage.replacements)) {
+        if (typeof value !== 'string') {
+            // Old format detected, reset storage
+            typedStorage.replacements = {};
+            break;
+        }
+    }
+    
+    // Check if buffer is in old object-based format and reset if needed
+    if (typedStorage.buffer && typeof typedStorage.buffer !== 'string') {
+        typedStorage.buffer = undefined;
     }
 }
 
 /**
  * Helper to update a replacement and ensure storage is synced.
  * Vendetta's storage system requires reassignment to detect changes.
- * Also deep-clones nested objects to avoid mutation issues.
+ * Now stores data as encoded protocol messages for compression.
  */
 export function setReplacement(userId: string, data: UserReplacementData) {
-    // Deep clone the data to avoid mutation issues and ensure proper JSON serialization
-    const clonedData: UserReplacementData = {
-        user: data.user ? { ...data.user } : undefined,
-        profile: data.profile ? { ...data.profile } : undefined,
+    // Encode the data as a COMMIT_PROFILE protocol message
+    const encoded = encodeMessage({
+        $: "COMMIT_PROFILE",
+        targetUserId: userId,
+        user: data.user,
+        profile: data.profile,
         avatarURL: data.avatarURL,
         avatarSource: data.avatarSource,
-    };
-    
-    // Fix Date properties that became strings during JSON serialization
-    if (clonedData.profile) {
-        if (clonedData.profile.premiumSince) {
-            clonedData.profile.premiumSince = new Date();
-        }
-        if (clonedData.profile.premiumGuildSince) {
-            clonedData.profile.premiumGuildSince = new Date();
-        }
-    }
+    });
     
     typedStorage.replacements = {
         ...typedStorage.replacements,
-        [userId]: clonedData
+        [userId]: encoded
     };
+}
+
+/**
+ * Helper to get a replacement from storage.
+ * Decodes the protocol message back to UserReplacementData.
+ */
+export function getReplacement(userId: string): UserReplacementData | undefined {
+    const encoded = typedStorage.replacements?.[userId];
+    if (!encoded) return undefined;
+    
+    const decoded = decodeMessage(encoded);
+    if (!decoded || decoded.$ !== "COMMIT_PROFILE") return undefined;
+    
+    return {
+        user: decoded.user,
+        profile: decoded.profile,
+        avatarURL: decoded.avatarURL,
+        avatarSource: decoded.avatarSource,
+    };
+}
+
+/**
+ * Helper to get all replacements as a map of userId -> UserReplacementData.
+ */
+export function getAllReplacements(): Record<string, UserReplacementData> {
+    const result: Record<string, UserReplacementData> = {};
+    
+    for (const userId of Object.keys(typedStorage.replacements || {})) {
+        const data = getReplacement(userId);
+        if (data) {
+            result[userId] = data;
+        }
+    }
+    
+    return result;
 }
 
 /**
@@ -105,20 +149,58 @@ export function clearAllReplacements() {
 
 /**
  * Helper to set buffer data and ensure storage is synced.
- * Properly handles object reassignment for Vendetta's storage system.
+ * Now stores as encoded protocol message for compression.
  */
-export function setBuffer(bufferData: ImpersonatorStorage["buffer"]) {
-    const clonedBuffer = { ...bufferData };
-    
-    // Fix Date properties that became strings during JSON serialization
-    if (clonedBuffer?.profile) {
-        if (clonedBuffer.profile.premiumSince) {
-            clonedBuffer.profile.premiumSince = new Date();
-        }
-        if (clonedBuffer.profile.premiumGuildSince) {
-            clonedBuffer.profile.premiumGuildSince = new Date();
-        }
+export function setBuffer(bufferData: BufferData) {
+    if (!bufferData || (!bufferData.user && !bufferData.profile)) {
+        // Clear buffer if empty
+        typedStorage.buffer = undefined;
+        return;
     }
     
-    typedStorage.buffer = clonedBuffer;
+    // Encode the buffer as a COMMIT_PROFILE protocol message
+    // We use a dummy targetUserId since buffer is not yet assigned to a user
+    const encoded = encodeMessage({
+        $: "COMMIT_PROFILE",
+        targetUserId: "_buffer_",
+        user: bufferData.user,
+        profile: bufferData.profile,
+        avatarURL: bufferData.avatarURL,
+        avatarSource: bufferData.avatarSource,
+    });
+    
+    // Store metadata separately (not part of protocol message)
+    const metadata = {
+        sourceUsername: bufferData.sourceUsername,
+        timestamp: bufferData.timestamp,
+    };
+    
+    // Encode with metadata appended as JSON
+    typedStorage.buffer = encoded + "|" + JSON.stringify(metadata);
+}
+
+/**
+ * Helper to get buffer data from storage.
+ * Decodes the protocol message back to BufferData.
+ */
+export function getBuffer(): BufferData | undefined {
+    const stored = typedStorage.buffer;
+    if (!stored) return undefined;
+    
+    // Split encoded message and metadata
+    const [encoded, metadataStr] = stored.split("|");
+    
+    const decoded = decodeMessage(encoded);
+    if (!decoded || decoded.$ !== "COMMIT_PROFILE") return undefined;
+    
+    const metadata = metadataStr ? JSON.parse(metadataStr) : {};
+    
+    return {
+        user: decoded.user,
+        profile: decoded.profile,
+        avatarURL: decoded.avatarURL,
+        avatarSource: decoded.avatarSource,
+        sourceUsername: metadata.sourceUsername,
+        timestamp: metadata.timestamp,
+    };
 }
