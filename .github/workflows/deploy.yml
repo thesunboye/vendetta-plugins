@@ -18,7 +18,8 @@ jobs:
               with:
                   node-version: "22"
                   cache: "pnpm"
-                  corepack: true
+
+            - run: corepack enable
 
             - name: Install deps
               run: pnpm m i
