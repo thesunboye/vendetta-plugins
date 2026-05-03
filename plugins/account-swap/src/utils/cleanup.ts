@@ -8,6 +8,7 @@ export interface PendingSwap {
     newToken?: string;
     relevantMessages: string[];
     timeout?: NodeJS.Timeout;
+    forceDuration?: number;
 }
 
 export interface PendingPossession {

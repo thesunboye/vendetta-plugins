@@ -18,24 +18,9 @@ export function createLogoutPatch() {
 
         showConfirmationAlert({
             title: "🔒 Force Swap Active",
-            content: `Logout is disabled during a forced swap with **${state.targetUsername}**. To regain full control of your account, use the \`/force-cancel\` command to end the forced swap first.`,
+            content: `Logout is disabled during a forced swap with **${state.targetUsername}**.`,
             confirmText: "Okay",
             onConfirm: () => {},
-            cancelText: "Force Logout (Emergency)",
-            onCancel: () => {
-                showConfirmationAlert({
-                    title: "⚠️ Final Warning",
-                    content: `Forced logout will end the forced swap with **${state.targetUsername}** immediately. Are you absolutely sure?`,
-                    confirmText: "Yes, force logout",
-                    confirmColor: "red" as any,
-                    onConfirm: () => {
-                        cancelForcedSwap();
-                        origFunc(...args);
-                    },
-                    cancelText: "Go back",
-                    onCancel: () => {},
-                });
-            },
         });
     });
 }

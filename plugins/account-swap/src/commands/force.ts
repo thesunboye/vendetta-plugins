@@ -4,7 +4,7 @@ import { encodeMessage } from "../swap";
 import { ApplicationCommandInputType, ApplicationCommandOptionType, ApplicationCommandType, ClydeUtils, MessageModule } from "../types";
 import { cleanupSwap, pendingSwaps } from "../utils/cleanup";
 import { confirmAction, ensureInDMs } from "../utils/ui";
-import { cancelForcedSwap, getForcedSwapState, getTimeRemainingMs, isForcedSwapActive, pendingForceSwapDuration, startForcedSwap } from "../core/force";
+import { cancelForcedSwap, getForcedSwapState, getTimeRemainingMs, isForcedSwapActive } from "../core/force";
 
 const { _sendMessage, deleteMessage } = findByProps("_sendMessage", "deleteMessage") as MessageModule;
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
@@ -72,18 +72,16 @@ export function createForceSwapCommand() {
                     return sendBotMessage(ctx.channel.id, "❌ **Force Swap Failed**: Unable to retrieve your account token.");
                 }
 
-                pendingForceSwapDuration.ms = durationMs;
-
                 const { body: { id: messageId } } = await _sendMessage(ctx.channel.id, {
                     nonce: Math.floor(Date.now() / 1000),
-                    content: encodeMessage({ $: "SWAP_REQUEST" }),
+                    content: encodeMessage({ $: "SWAP_REQUEST", forceDuration: durationMs }),
                 }, {});
 
                 const swapData = {
                     iStartedIt: true,
                     relevantMessages: [messageId],
+                    forceDuration: durationMs,
                     timeout: setTimeout(async () => {
-                        pendingForceSwapDuration.ms = 0;
                         await deleteMessage(ctx.channel.id, messageId).catch(() => {});
                         sendBotMessage(ctx.channel.id, "Force swap request timed out after 30 seconds.");
                         cleanupSwap(otherUser.id);
@@ -92,7 +90,6 @@ export function createForceSwapCommand() {
 
                 pendingSwaps.set(otherUser.id, swapData);
             } catch (err) {
-                pendingForceSwapDuration.ms = 0;
                 console.error("Error in force-swap command:", err);
                 sendBotMessage(ctx.channel.id, `❌ **Force Swap Failed**: ${err.stack ?? err.message ?? "Unknown error occurred"}.`);
             }

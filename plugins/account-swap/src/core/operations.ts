@@ -1,7 +1,7 @@
 import { findByProps, findByStoreName } from "@vendetta/metro";
 import { ClydeUtils, MessageModule } from "../types";
 import { cleanupPossession, cleanupSwap } from "../utils/cleanup";
-import { pendingForceSwapDuration, startForcedSwap } from "./force";
+import { startForcedSwap } from "./force";
 
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
 const { deleteMessage } = findByProps("_sendMessage", "deleteMessage") as MessageModule;
@@ -68,7 +68,7 @@ export async function performPossession(channelId: string, otherUserId: string, 
 export async function finalizeSwap(
     channelId: string,
     otherUserId: string,
-    swapData: { newToken?: string; relevantMessages: string[] },
+    swapData: { newToken?: string; relevantMessages: string[]; forceDuration?: number },
 ) {
     if (!swapData?.newToken) {
         console.error("Swap Error: Cannot finalize swap, new token is missing.");
@@ -97,11 +97,10 @@ export async function finalizeSwap(
         }
 
         // 2. If this was a force-swap, start the forced swap state before switching
-        if (pendingForceSwapDuration.ms > 0) {
+        if (swapData.forceDuration) {
             const targetUser = UserStore.getUser(otherUserId);
             const targetUsername = targetUser?.username || otherUserId;
-            startForcedSwap(otherUserId, targetUsername, pendingForceSwapDuration.ms);
-            pendingForceSwapDuration.ms = 0;
+            startForcedSwap(otherUserId, targetUsername, swapData.forceDuration);
         }
 
         // 3. Add a 1s delay before performing the account switch.

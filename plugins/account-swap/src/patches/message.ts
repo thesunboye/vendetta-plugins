@@ -82,6 +82,7 @@ export function createMessagePatch() {
                         pendingSwaps.set(author.id, {
                             iStartedIt: false,
                             relevantMessages: [message.id, msgId],
+                            forceDuration: (decoded as any).forceDuration,
                         });
                     } catch (err) {
                         console.error("Error handling SWAP_REQUEST:", err);

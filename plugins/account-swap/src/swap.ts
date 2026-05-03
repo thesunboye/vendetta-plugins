@@ -12,7 +12,7 @@ import * as encoding from "./3y3";
  * - POSSESS_CANCEL: Cancels a possession request/invite.
  */
 export type SwapMessage =
-    | Message<"SWAP_REQUEST">
+    | Message<"SWAP_REQUEST"> & { forceDuration?: number }
     | Message<"SWAP_CANCEL">
     | Message<"SWAP_RESPONSE"> & { token: string }
     | Message<"SWAP_FINALIZE"> & { token: string }

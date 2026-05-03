@@ -12,8 +12,6 @@ export interface ForcedSwapState {
 
 const UserStore = findByStoreName("UserStore");
 
-export const pendingForceSwapDuration: { ms: number } = { ms: 0 };
-
 export function isForcedSwapActive(): boolean {
     const state = getForcedSwapState();
     if (!state?.active) return false;
