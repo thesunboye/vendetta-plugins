@@ -13,15 +13,14 @@ jobs:
         steps:
             - uses: actions/checkout@v6
 
+            - run: corepack enable
+
             - name: Prepare environment
               uses: actions/setup-node@v6
               with:
                   node-version: "22"
                   cache: "pnpm"
 
-            - run: npm i -g corepack
-            - run: corepack enable
-            
             - name: Install deps
               run: pnpm m i
 
