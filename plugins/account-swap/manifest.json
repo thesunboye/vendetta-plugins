@@ -1,9 +1,9 @@
 {
-    "name": "Swapp",
-    "description": "Ya know what it does~",
+    "name": "Account Swap",
+    "description": "Adds a command to swap the accounts of funky individuals.",
     "authors": [
         {
-            "name": "Bullet",
+            "name": "That One Bullet",
             "id": "855037054671781908"
         }
     ],
