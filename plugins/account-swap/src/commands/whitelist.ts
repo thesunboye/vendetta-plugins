@@ -3,8 +3,17 @@ import { findByProps } from "@vendetta/metro";
 import { storage } from "@vendetta/plugin";
 import { ApplicationCommandInputType, ApplicationCommandType, ClydeUtils } from "../types";
 import { ensureInDMs } from "../utils/ui";
+import { isForcedSwapActive } from "../core/force";
 
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
+
+function guard(ctx: any): boolean {
+    if (isForcedSwapActive()) {
+        sendBotMessage(ctx.channel.id, "🔒 This command is disabled during a forced swap. Use `/force-cancel` to end the forced swap.");
+        return false;
+    }
+    return true;
+}
 
 export function createWhitelistAddCommand() {
     return registerCommand({
@@ -18,6 +27,7 @@ export function createWhitelistAddCommand() {
         options: [],
         execute(args, ctx) {
             try {
+                if (!guard(ctx)) return;
                 const userToWhitelist = ensureInDMs(ctx);
                 if (!userToWhitelist) return;
 
@@ -52,6 +62,7 @@ export function createWhitelistRemoveCommand() {
         applicationId: "-1",
         options: [],
         execute(args, ctx) {
+            if (!guard(ctx)) return;
             const userToRemove = ensureInDMs(ctx);
             if (!userToRemove) return;
 
@@ -76,6 +87,7 @@ export function createWhitelistListCommand() {
         applicationId: "-1",
         options: [],
         execute(args, ctx) {
+            if (!guard(ctx)) return;
             if (storage.whitelist.length === 0) {
                 sendBotMessage(ctx.channel.id, "No users are currently whitelisted.");
             } else {
@@ -97,6 +109,7 @@ export function createWhitelistClearCommand() {
         applicationId: "-1",
         options: [],
         execute(args, ctx) {
+            if (!guard(ctx)) return;
             storage.whitelist = [];
             sendBotMessage(ctx.channel.id, "Whitelist cleared!");
         },

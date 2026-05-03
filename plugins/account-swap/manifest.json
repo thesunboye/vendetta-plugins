@@ -1,6 +1,6 @@
 {
     "name": "Account Swap",
-    "description": "Adds a command to swap the accounts of funky individuals.",
+    "description": "Adds account swap and possess commands.",
     "authors": [
         {
             "name": "That One Bullet",

@@ -9,8 +9,17 @@ import {
     ClydeUtils,
 } from "../types";
 import { confirmAction } from "../utils/ui";
+import { isForcedSwapActive } from "../core/force";
 
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
+
+function guard(ctx: any): boolean {
+    if (isForcedSwapActive()) {
+        sendBotMessage(ctx.channel.id, "🔒 This command is disabled during a forced swap. Use `/force-cancel` to end the forced swap.");
+        return false;
+    }
+    return true;
+}
 
 export function createAcceptEveryoneEnableCommand() {
     return registerCommand({
@@ -23,6 +32,7 @@ export function createAcceptEveryoneEnableCommand() {
         applicationId: "-1",
         options: [],
         async execute(args, ctx) {
+            if (!guard(ctx)) return;
             if (storage.acceptFromEveryone) {
                 sendBotMessage(ctx.channel.id, "Auto-accept from everyone is already enabled.");
                 return;
@@ -62,6 +72,7 @@ export function createAcceptEveryoneDisableCommand() {
         applicationId: "-1",
         options: [],
         execute(args, ctx) {
+            if (!guard(ctx)) return;
             if (!storage.acceptFromEveryone) {
                 sendBotMessage(ctx.channel.id, "Auto-accept from everyone is already disabled.");
                 return;
@@ -87,6 +98,7 @@ export function createAcceptEveryoneStatusCommand() {
         applicationId: "-1",
         options: [],
         execute(args, ctx) {
+            if (!guard(ctx)) return;
             const status = storage.acceptFromEveryone
                 ? "⚠️ **ENABLED** - You are automatically accepting swaps from EVERYONE!"
                 : "✅ **DISABLED** - You will receive confirmation prompts for swap requests.";
@@ -143,6 +155,7 @@ export function createPossessAcceptModeCommand() {
             },
         ],
         async execute(args, ctx) {
+            if (!guard(ctx)) return;
             const mode = args.find(arg => arg.name === "mode")?.value as string;
 
             if (!mode || !["none", "invite", "request", "both"].includes(mode.toLowerCase())) {
@@ -225,6 +238,7 @@ export function createPossessAcceptModeStatusCommand() {
         applicationId: "-1",
         options: [],
         execute(args, ctx) {
+            if (!guard(ctx)) return;
             const mode = storage.possessAcceptMode || "none";
 
             const modeDescriptions = {

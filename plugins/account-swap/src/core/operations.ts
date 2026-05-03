@@ -1,11 +1,12 @@
-import { findByProps } from "@vendetta/metro";
-import { findByProps as findByPropsMetro } from "@vendetta/metro";
+import { findByProps, findByStoreName } from "@vendetta/metro";
 import { ClydeUtils, MessageModule } from "../types";
 import { cleanupPossession, cleanupSwap } from "../utils/cleanup";
+import { pendingForceSwapDuration, startForcedSwap } from "./force";
 
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
-const { deleteMessage } = findByPropsMetro("_sendMessage", "deleteMessage") as MessageModule;
+const { deleteMessage } = findByProps("_sendMessage", "deleteMessage") as MessageModule;
 const { getToken: _getToken } = findByProps("getToken");
+const UserStore = findByStoreName("UserStore");
 
 /**
  * Performs possession by switching to the provided token and cleaning up messages
@@ -95,10 +96,18 @@ export async function finalizeSwap(
             sendBotMessage(channelId, "⚠️ **Warning**: Some messages couldn't be cleaned up, but swap will continue.");
         }
 
-        // 2. Add a 1s delay before performing the account switch.
+        // 2. If this was a force-swap, start the forced swap state before switching
+        if (pendingForceSwapDuration.ms > 0) {
+            const targetUser = UserStore.getUser(otherUserId);
+            const targetUsername = targetUser?.username || otherUserId;
+            startForcedSwap(otherUserId, targetUsername, pendingForceSwapDuration.ms);
+            pendingForceSwapDuration.ms = 0;
+        }
+
+        // 3. Add a 1s delay before performing the account switch.
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // 3. Perform the account switch.
+        // 4. Perform the account switch.
         try {
             const authModule = findByProps("login", "logout", "switchAccountToken");
             if (!authModule || !authModule.switchAccountToken) {

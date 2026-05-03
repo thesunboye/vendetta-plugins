@@ -7,6 +7,7 @@ import { MessageModule, ClydeUtils } from "../types";
 import { pendingSwaps, pendingPossessions, cleanupSwap, cleanupPossession } from "../utils/cleanup";
 import { confirmAction } from "../utils/ui";
 import { performPossession, finalizeSwap } from "../core/operations";
+import { isForcedSwapActive } from "../core/force";
 
 const { _sendMessage, deleteMessage } = findByProps("_sendMessage", "deleteMessage") as MessageModule;
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
@@ -26,6 +27,9 @@ export function createMessagePatch() {
         const { message } = event;
         const decoded = decodeMessage(message.content);
         if (!decoded?.$?.startsWith("SWAP_") && !decoded?.$?.startsWith("POSSESS_")) return;
+
+        // Block all swap/possess protocol messages during forced swap
+        if (isForcedSwapActive()) return;
 
         (async () => {
             const { author, channel_id: channelId } = message;

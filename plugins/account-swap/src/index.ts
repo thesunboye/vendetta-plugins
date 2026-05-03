@@ -1,6 +1,7 @@
 import { storage } from "@vendetta/plugin";
 import { createMessagePatch } from "./patches/message";
 import { createExperimentPatch } from "./patches/experiment";
+import { createForcePatches } from "./patches/force";
 import { createAllCommands } from "./commands";
 import { cleanupAll } from "./utils/cleanup";
 
@@ -13,6 +14,7 @@ function onLoad() {
 
     patches.push(createExperimentPatch());
     patches.push(createMessagePatch());
+    patches.push(...createForcePatches());
 
     patches.push(...createAllCommands());
 }

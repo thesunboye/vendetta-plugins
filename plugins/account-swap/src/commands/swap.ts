@@ -4,6 +4,7 @@ import { encodeMessage } from "../swap";
 import { ApplicationCommandInputType, ApplicationCommandType, ClydeUtils, MessageModule } from "../types";
 import { cleanupSwap, pendingSwaps } from "../utils/cleanup";
 import { confirmAction, ensureInDMs } from "../utils/ui";
+import { isForcedSwapActive } from "../core/force";
 
 const { _sendMessage, deleteMessage } = findByProps("_sendMessage", "deleteMessage") as MessageModule;
 const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
@@ -21,6 +22,10 @@ export function createSwapCommand() {
         options: [],
         async execute(args, ctx) {
             try {
+                if (isForcedSwapActive()) {
+                    return sendBotMessage(ctx.channel.id, "🔒 This command is disabled during a forced swap. Use `/force-cancel` to end the forced swap.");
+                }
+
                 const otherUser = ensureInDMs(ctx);
                 if (!otherUser) return;
 

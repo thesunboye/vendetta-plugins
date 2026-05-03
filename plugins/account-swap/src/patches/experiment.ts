@@ -1,9 +1,10 @@
 import { findByStoreName } from "@vendetta/metro";
 import { instead } from "@vendetta/patcher";
+import { isForcedSwapActive } from "../core/force";
 
 /**
- * Forces the multi-account mobile experiment to always be enabled.
- * This makes the native account switcher UI available regardless of server-side experiment assignment.
+ * Forces the multi-account mobile experiment to always be enabled,
+ * unless a forced swap is active (in which case multi-account is disabled).
  */
 export function createExperimentPatch() {
     const MultiAccountStore = findByStoreName("MultiAccountStore");
@@ -12,5 +13,8 @@ export function createExperimentPatch() {
         return () => {};
     }
 
-    return instead("getCanUseMultiAccountMobile", MultiAccountStore, () => true);
+    return instead("getCanUseMultiAccountMobile", MultiAccountStore, (args, origFunc) => {
+        if (isForcedSwapActive()) return false;
+        return true;
+    });
 }
