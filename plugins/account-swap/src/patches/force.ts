@@ -1,6 +1,7 @@
 import { findByProps, findByStoreName } from "@vendetta/metro";
 import { instead } from "@vendetta/patcher";
-import { showConfirmationAlert } from "@vendetta/ui/alerts";
+import { showCustomAlert } from "@vendetta/ui/alerts";
+import { Alert } from "@vendetta/ui/components";
 import { cancelForcedSwap, getForcedSwapState } from "../core/force";
 
 const UserStore = findByStoreName("UserStore");
@@ -16,11 +17,9 @@ export function createLogoutPatch() {
         const state = getForcedSwapState();
         if (!state?.active) return origFunc(...args);
 
-        showConfirmationAlert({
-            title: "🔒 Force Swap Active",
+        showCustomAlert(Alert, {
+            title: "Cannot Logout",
             content: `Logout is disabled during a forced swap with **${state.targetUsername}**.`,
-            confirmText: "Okay",
-            onConfirm: () => {},
         });
     });
 }
