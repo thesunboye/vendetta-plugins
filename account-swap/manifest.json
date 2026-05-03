@@ -1,1 +1,1 @@
-{"name":"Account Swap","description":"Adds a command to swap the accounts of funky individuals.","authors":[{"name":"That One Bullet","id":"855037054671781908"}],"main":"index.js","vendetta":{"icon":"ic_feedback"},"hash":"fdeea43cd440abafec5332948c4c304bf6b0f1274148f185c435c33936890c0c"}
+{"name":"Account Swap","description":"Adds account swap and possess commands.","authors":[{"name":"That One Bullet","id":"855037054671781908"}],"main":"index.js","vendetta":{"icon":"ic_feedback"},"hash":"c1b3f525919fbc1d2ebfbb79bbfeb084d16c7ac6428c4cce76d3000e84daf77c"}
