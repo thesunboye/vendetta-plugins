@@ -93,21 +93,16 @@ export function createMessagePatch() {
                     if (pendingSwap) return;
 
                     try {
-                        const isWhitelisted = storage.whitelist.includes(author.id);
-                        const acceptFromEveryone = storage.acceptFromEveryone;
-                        
-                        let isConfirmed = false;
-                        if (acceptFromEveryone) {
-                            isConfirmed = true;
-                        } else if (isWhitelisted) {
-                            isConfirmed = true;
-                        } else {
-                            const minutes = Math.floor((decoded.duration || 0) / 60000);
-                            isConfirmed = await confirmAction(
-                                `Accept forced swap from ${author.username}?`,
-                                `This is a 🔒 **forced swap** for ${minutes} minutes. Your account token will be sent to the other user. During this period logout will be blocked and a lock emoji will appear on both usernames. Are you sure you want to proceed?`
-                            );
-                        }
+                        const minutes = Math.floor((decoded.duration || 0) / 60000);
+                        const isConfirmed = await confirmAction(
+                            `🔒 Accept forced swap from ${author.username}?`,
+                            `This is a **forced swap** for ${minutes} minutes. During this period:\n\n`
+                                + "• Logout will be blocked\n"
+                                + "• All swap commands will be disabled\n"
+                                + "• A lock emoji (🔒) will appear on both usernames\n\n"
+                                + "The only way to cancel early is `/force-cancel` with 3 confirmation prompts.\n\n"
+                                + "Do you want to proceed?"
+                        );
 
                         if (!isConfirmed) {
                             const { body: { id: cancelMsgId } } = await _sendMessage(channelId, { 
