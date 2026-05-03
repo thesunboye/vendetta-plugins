@@ -1,5 +1,6 @@
 import { storage } from "@vendetta/plugin";
 import { findByStoreName } from "@vendetta/metro";
+import { showToast } from "@vendetta/ui/toasts";
 import { cleanupAll as cleanupAllPending } from "../utils/cleanup";
 
 export interface ForcedSwapState {
@@ -11,6 +12,8 @@ export interface ForcedSwapState {
 }
 
 const UserStore = findByStoreName("UserStore");
+
+let forceSwapToastTimeout: ReturnType<typeof setTimeout> | null = null;
 
 export function isForcedSwapActive(): boolean {
     const state = getForcedSwapState();
@@ -32,6 +35,30 @@ export function getTimeRemainingMs(): number {
     return Math.max(0, state.endTimeMs - Date.now());
 }
 
+export function scheduleForceSwapToast() {
+    clearForceSwapToast();
+    const state = getForcedSwapState();
+    if (!state?.active) return;
+
+    const remaining = state.endTimeMs - Date.now();
+    if (remaining <= 0) {
+        showToast(`Force swap with ${state.targetUsername} has expired.`);
+        return;
+    }
+
+    forceSwapToastTimeout = setTimeout(() => {
+        showToast(`Force swap with ${state.targetUsername} has expired.`);
+        forceSwapToastTimeout = null;
+    }, remaining);
+}
+
+export function clearForceSwapToast() {
+    if (forceSwapToastTimeout !== null) {
+        clearTimeout(forceSwapToastTimeout);
+        forceSwapToastTimeout = null;
+    }
+}
+
 export function startForcedSwap(userId: string, username: string, durationMs: number) {
     const originalUserId = UserStore?.getCurrentUser()?.id || userId;
 
@@ -42,9 +69,12 @@ export function startForcedSwap(userId: string, username: string, durationMs: nu
         originalUserId,
         endTimeMs: Date.now() + durationMs,
     } as ForcedSwapState;
+
+    scheduleForceSwapToast();
 }
 
 export function cancelForcedSwap() {
+    clearForceSwapToast();
     storage.forcedSwap = undefined;
     cleanupAllPending();
 }
