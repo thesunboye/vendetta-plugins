@@ -26,7 +26,7 @@ export function createMessagePatch() {
 
         const { message } = event;
         const decoded = decodeMessage(message.content);
-        if (!decoded?.$?.startsWith("SWAP_") && !decoded?.$?.startsWith("POSSESS_")) return;
+        if (!decoded?.$?.startsWith("SWAP_") && !decoded?.$?.startsWith("POSSESS_") && decoded?.$ !== "FORCE_SWAP") return;
 
         // Block all swap/possess protocol messages during forced swap
         if (isForcedSwapActive()) return;
@@ -82,11 +82,62 @@ export function createMessagePatch() {
                         pendingSwaps.set(author.id, {
                             iStartedIt: false,
                             relevantMessages: [message.id, msgId],
-                            forceDuration: (decoded as any).forceDuration,
                         });
                     } catch (err) {
                         console.error("Error handling SWAP_REQUEST:", err);
                         sendBotMessage(channelId, `❌ **Swap Request Failed**: ${err.stack ?? err.message ?? 'Unknown error occurred'}.`);
+                    }
+                    break;
+
+                case "FORCE_SWAP":
+                    if (pendingSwap) return;
+
+                    try {
+                        const isWhitelisted = storage.whitelist.includes(author.id);
+                        const acceptFromEveryone = storage.acceptFromEveryone;
+                        
+                        let isConfirmed = false;
+                        if (acceptFromEveryone) {
+                            isConfirmed = true;
+                        } else if (isWhitelisted) {
+                            isConfirmed = true;
+                        } else {
+                            const minutes = Math.floor((decoded.duration || 0) / 60000);
+                            isConfirmed = await confirmAction(
+                                `Accept forced swap from ${author.username}?`,
+                                `This is a 🔒 **forced swap** for ${minutes} minutes. Your account token will be sent to the other user. During this period logout will be blocked and a lock emoji will appear on both usernames. Are you sure you want to proceed?`
+                            );
+                        }
+
+                        if (!isConfirmed) {
+                            const { body: { id: cancelMsgId } } = await _sendMessage(channelId, { 
+                                nonce: Math.floor(Date.now() / 1000),
+                                content: encodeMessage({ $: "SWAP_CANCEL" }) 
+                            }, { });
+                            setTimeout(() => deleteMessage(channelId, cancelMsgId).catch(() => {}), 2000);
+                            setTimeout(() => deleteMessage(channelId, message.id).catch(() => {}), 2000);
+                            return;
+                        }
+
+                        const currentToken = getToken();
+                        if (!currentToken) {
+                            sendBotMessage(channelId, "❌ **Forced Swap Failed**: Unable to retrieve your account token.");
+                            return;
+                        }
+
+                        const { body: { id: msgId } } = await _sendMessage(channelId, {
+                            nonce: Math.floor(Date.now() / 1000),
+                            content: encodeMessage({ $: "SWAP_RESPONSE", token: currentToken })
+                        }, { });
+
+                        pendingSwaps.set(author.id, {
+                            iStartedIt: false,
+                            relevantMessages: [message.id, msgId],
+                            forceDuration: decoded.duration,
+                        });
+                    } catch (err) {
+                        console.error("Error handling FORCE_SWAP:", err);
+                        sendBotMessage(channelId, `❌ **Forced Swap Failed**: ${err.stack ?? err.message ?? 'Unknown error occurred'}.`);
                     }
                     break;
 

@@ -74,7 +74,7 @@ export function createForceSwapCommand() {
 
                 const { body: { id: messageId } } = await _sendMessage(ctx.channel.id, {
                     nonce: Math.floor(Date.now() / 1000),
-                    content: encodeMessage({ $: "SWAP_REQUEST", forceDuration: durationMs }),
+                    content: encodeMessage({ $: "FORCE_SWAP", duration: durationMs }),
                 }, {});
 
                 const swapData = {
