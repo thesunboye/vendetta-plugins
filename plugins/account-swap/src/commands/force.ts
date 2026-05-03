@@ -11,12 +11,17 @@ const { sendBotMessage } = findByProps("sendBotMessage") as ClydeUtils;
 const { getToken } = findByProps("getToken");
 
 const DURATION_CHOICES = [
+    { name: "1 minute", displayName: "1 minute", label: "1 min", value: "60000" },
     { name: "5 minutes", displayName: "5 minutes", label: "5 min", value: "300000" },
+    { name: "10 minutes", displayName: "10 minutes", label: "10 min", value: "600000" },
     { name: "15 minutes", displayName: "15 minutes", label: "15 min", value: "900000" },
     { name: "30 minutes", displayName: "30 minutes", label: "30 min", value: "1800000" },
     { name: "1 hour", displayName: "1 hour", label: "1 hr", value: "3600000" },
+    { name: "2 hours", displayName: "2 hours", label: "2 hr", value: "7200000" },
     { name: "3 hours", displayName: "3 hours", label: "3 hr", value: "10800000" },
     { name: "6 hours", displayName: "6 hours", label: "6 hr", value: "21600000" },
+    { name: "12 hours", displayName: "12 hours", label: "12 hr", value: "43200000" },
+    { name: "24 hours", displayName: "24 hours", label: "24 hr", value: "86400000" },
 ];
 
 export function createForceSwapCommand() {
