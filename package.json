@@ -2,7 +2,6 @@
     "private": true,
     "scripts": {
         "build": "node build.mjs",
-        "fmt": "dprint fmt",
         "check": "tsc"
     },
     "dependencies": {

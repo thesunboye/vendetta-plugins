@@ -1,13 +1,15 @@
 {
     "compilerOptions": {
+        "rootDir": ".",
         "outDir": "dist",
         "target": "ESNext",
         "module": "ESNext",
-        "moduleResolution": "node",
+        "moduleResolution": "bundler",
         "esModuleInterop": true,
         "jsx": "react-native",
         "allowJs": true,
-        "sourceMap": true
+        "sourceMap": true,
+        "skipLibCheck": true
     },
     "include": ["plugins", "node_modules/vendetta-types"]
 }
