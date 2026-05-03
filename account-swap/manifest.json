@@ -1,1 +1,1 @@
-{"name":"Swapp","description":"Ya know what it does~","authors":[{"name":"Bullet","id":"855037054671781908"}],"main":"index.js","vendetta":{"icon":"ic_feedback"},"hash":"fdeea43cd440abafec5332948c4c304bf6b0f1274148f185c435c33936890c0c"}
+{"name":"Account Swap","description":"Adds a command to swap the accounts of funky individuals.","authors":[{"name":"That One Bullet","id":"855037054671781908"}],"main":"index.js","vendetta":{"icon":"ic_feedback"},"hash":"fdeea43cd440abafec5332948c4c304bf6b0f1274148f185c435c33936890c0c"}
