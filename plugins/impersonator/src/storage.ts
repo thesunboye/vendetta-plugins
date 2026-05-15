@@ -54,6 +54,10 @@ export interface ImpersonatorStorage {
 
 export const typedStorage = storage as unknown as ImpersonatorStorage;
 
+// In-memory cache to avoid repeated decode operations
+const replacementCache = new Map<string, UserReplacementData | null>();
+let bufferCache: BufferData | undefined | null = undefined; // null = not loaded yet
+
 export function initStorage() {
     // Initialize replacements if missing
     if (!typedStorage.replacements) {
@@ -73,6 +77,10 @@ export function initStorage() {
     if (typedStorage.buffer && typeof typedStorage.buffer !== 'string') {
         typedStorage.buffer = undefined;
     }
+    
+    // Clear caches on init
+    replacementCache.clear();
+    bufferCache = undefined;
 }
 
 /**
@@ -95,31 +103,66 @@ export function setReplacement(userId: string, data: UserReplacementData) {
         ...typedStorage.replacements,
         [userId]: encoded
     };
+    
+    // Update cache with the data (no clone needed, references are safe)
+    replacementCache.set(userId, data);
 }
 
 /**
  * Helper to get a replacement from storage.
- * Decodes the protocol message back to UserReplacementData.
+ * Uses in-memory cache to avoid repeated decodings.
  */
 export function getReplacement(userId: string): UserReplacementData | undefined {
+    // Check cache first
+    if (replacementCache.has(userId)) {
+        const cached = replacementCache.get(userId);
+        return cached === null ? undefined : cached;
+    }
+    
     const encoded = typedStorage.replacements?.[userId];
-    if (!encoded) return undefined;
+    if (!encoded) {
+        replacementCache.set(userId, null); // Cache miss
+        return undefined;
+    }
     
     const decoded = decodeMessage(encoded);
-    if (!decoded || decoded.$ !== "COMMIT_PROFILE") return undefined;
+    if (!decoded || decoded.$ !== "COMMIT_PROFILE") {
+        replacementCache.set(userId, null);
+        return undefined;
+    }
     
-    return {
+    // Store decoded data directly in cache (no cloning)
+    const data: UserReplacementData = {
         user: decoded.user,
         profile: decoded.profile,
         avatarURL: decoded.avatarURL,
         avatarSource: decoded.avatarSource,
     };
+    
+    replacementCache.set(userId, data);
+    return data;
 }
 
 /**
- * Helper to get all replacements as a map of userId -> UserReplacementData.
+ * Helper to get all replacements as a Map (more efficient than object spread).
  */
-export function getAllReplacements(): Record<string, UserReplacementData> {
+export function getAllReplacements(): Map<string, UserReplacementData> {
+    const result = new Map<string, UserReplacementData>();
+    
+    for (const userId of Object.keys(typedStorage.replacements || {})) {
+        const data = getReplacement(userId);
+        if (data) {
+            result.set(userId, data);
+        }
+    }
+    
+    return result;
+}
+
+/**
+ * Helper to get all replacements as an object (for backward compatibility).
+ */
+export function getAllReplacementsAsObject(): Record<string, UserReplacementData> {
     const result: Record<string, UserReplacementData> = {};
     
     for (const userId of Object.keys(typedStorage.replacements || {})) {
@@ -138,6 +181,9 @@ export function getAllReplacements(): Record<string, UserReplacementData> {
 export function deleteReplacement(userId: string) {
     const { [userId]: _, ...rest } = typedStorage.replacements;
     typedStorage.replacements = rest;
+    
+    // Clear from cache
+    replacementCache.delete(userId);
 }
 
 /**
@@ -145,6 +191,9 @@ export function deleteReplacement(userId: string) {
  */
 export function clearAllReplacements() {
     typedStorage.replacements = {};
+    
+    // Clear cache
+    replacementCache.clear();
 }
 
 /**
@@ -155,6 +204,7 @@ export function setBuffer(bufferData: BufferData) {
     if (!bufferData || (!bufferData.user && !bufferData.profile)) {
         // Clear buffer if empty
         typedStorage.buffer = undefined;
+        bufferCache = undefined; // Clear cache
         return;
     }
     
@@ -177,25 +227,40 @@ export function setBuffer(bufferData: BufferData) {
     
     // Encode with metadata appended as JSON
     typedStorage.buffer = encoded + "|" + JSON.stringify(metadata);
+    
+    // Update cache with reference (no clone needed)
+    bufferCache = bufferData;
 }
 
 /**
  * Helper to get buffer data from storage.
- * Decodes the protocol message back to BufferData.
+ * Uses in-memory cache to avoid repeated decodings.
  */
 export function getBuffer(): BufferData | undefined {
+    // Return cached buffer if available
+    if (bufferCache !== undefined) {
+        return bufferCache === null ? undefined : bufferCache;
+    }
+    
     const stored = typedStorage.buffer;
-    if (!stored) return undefined;
+    if (!stored) {
+        bufferCache = null; // Cache miss
+        return undefined;
+    }
     
     // Split encoded message and metadata
     const [encoded, metadataStr] = stored.split("|");
     
     const decoded = decodeMessage(encoded);
-    if (!decoded || decoded.$ !== "COMMIT_PROFILE") return undefined;
+    if (!decoded || decoded.$ !== "COMMIT_PROFILE") {
+        bufferCache = null;
+        return undefined;
+    }
     
     const metadata = metadataStr ? JSON.parse(metadataStr) : {};
     
-    return {
+    // Store decoded data directly in cache (no cloning)
+    const data: BufferData = {
         user: decoded.user,
         profile: decoded.profile,
         avatarURL: decoded.avatarURL,
@@ -203,4 +268,7 @@ export function getBuffer(): BufferData | undefined {
         sourceUsername: metadata.sourceUsername,
         timestamp: metadata.timestamp,
     };
+    
+    bufferCache = data;
+    return data;
 }
