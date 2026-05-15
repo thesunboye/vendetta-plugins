@@ -18,18 +18,17 @@ export function createListCommand() {
         options: [],
         async execute(args, ctx) {
             const replacements = getAllReplacements();
-            const userIds = Object.keys(replacements);
+            const count = replacements.size;
 
-            if (userIds.length === 0) {
+            if (count === 0) {
                 return sendBotMessage(ctx.channel.id, "No active profile replacements.");
             }
 
-            let message = `Active Profile Replacements (${userIds.length})\n\n`;
+            let message = `Active Profile Replacements (${count})\n\n`;
 
-            for (const userId of userIds) {
+            for (const [userId, replacement] of replacements) {
                 const user = UserStore.getUser(userId);
                 const username = user?.username || "Unknown User";
-                const replacement = replacements[userId];
                 
                 const hasUser = !!replacement.user;
                 const hasProfile = !!replacement.profile;
