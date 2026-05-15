@@ -103,7 +103,7 @@ export function createClearAllCommand() {
             }
         ],
         async execute(args, ctx) {
-            const count = Object.keys(getAllReplacements()).length;
+            const count = getAllReplacements().size;
             
             if (count === 0) {
                 return sendBotMessage(ctx.channel.id, "No profile replacements to clear.");
