@@ -12,8 +12,8 @@ export function createExportJsonCommand() {
     return registerCommand({
         name: "impersonate-export-json",
         displayName: "impersonate-export-json",
-        description: "Export a user's profile as JSON (or active replacement if applied).",
-        displayDescription: "Export a user's profile as JSON (or active replacement if applied).",
+        description: "Export a user's profile as raw JSON (or active replacement if applied).",
+        displayDescription: "Export a user's profile as raw JSON (or active replacement if applied).",
         type: ApplicationCommandType.CHAT as number,
         inputType: ApplicationCommandInputType.BUILT_IN_TEXT as number,
         applicationId: "-1",
@@ -94,40 +94,17 @@ export function createExportJsonCommand() {
                 return sendBotMessage(ctx.channel.id, "Failed: No profile data found for user.");
             }
 
-            // Format JSON with proper indentation
-            const jsonString = JSON.stringify(exportData, null, 2);
-
-            // Discord has a 2000 character limit, so we need to split if necessary
-            const chunks: string[] = [];
-            const maxChunkSize = 1900; // Leave room for formatting
-
-            if (jsonString.length > maxChunkSize) {
-                // Split into chunks if too large
-                for (let i = 0; i < jsonString.length; i += maxChunkSize) {
-                    chunks.push(jsonString.slice(i, i + maxChunkSize));
-                }
-            } else {
-                chunks.push(jsonString);
-            }
+            // Output raw JSON without formatting
+            const jsonString = JSON.stringify(exportData);
 
             const isSelf = userId === currentUser?.id;
             const username = user.username || "Unknown";
             const hasReplacement = !!replacement;
             const sourceLabel = hasReplacement ? "(active replacement)" : "(actual profile)";
 
-            // Send the JSON chunks
-            if (chunks.length === 1) {
-                sendBotMessage(ctx.channel.id, 
-                    `\`\`\`json\n${chunks[0]}\n\`\`\`\n\n📋 ${isSelf ? "Your" : `${username}'s`} profile ${sourceLabel} exported (${chunks[0].length} chars)`);
-            } else {
-                sendBotMessage(ctx.channel.id, 
-                    `📋 ${isSelf ? "Your" : `${username}'s`} profile ${sourceLabel} exported (${jsonString.length} chars, ${chunks.length} parts):`);
-                
-                for (let i = 0; i < chunks.length; i++) {
-                    sendBotMessage(ctx.channel.id, 
-                        `**Part ${i + 1}/${chunks.length}:**\n\`\`\`json\n${chunks[i]}\n\`\`\``);
-                }
-            }
+            sendBotMessage(ctx.channel.id, jsonString);
+            sendBotMessage(ctx.channel.id, 
+                `✅ Exported ${isSelf ? "your" : `${username}'s`} profile ${sourceLabel} (${jsonString.length} bytes)`);
         },
     });
 }
